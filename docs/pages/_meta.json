@@ -1,0 +1,10 @@
+{
+  "index": "Home",
+  "quick": "Quick Start",
+  "config": "Configuration",
+  "jobs": "Jobs",
+  "repositories": "Repositories",
+  "cli": "CLI",
+  "hooks": "Hooks",
+  "healthchecks": "Healthchecks"
+}

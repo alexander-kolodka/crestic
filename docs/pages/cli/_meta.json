@@ -1,0 +1,11 @@
+{
+  "general": "General",
+  "backup": "Backup",
+  "check": "Check",
+  "cron": "Cron",
+  "exec": "Exec",
+  "forget": "Forget",
+  "restore": "Restore",
+  "unlock": "Unlock",
+  "completion": "Completion"
+}

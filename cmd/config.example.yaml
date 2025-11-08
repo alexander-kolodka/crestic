@@ -1,0 +1,246 @@
+# Crestic Configuration Example
+# This file demonstrates all available configuration options for Crestic
+#
+# Crestic is a configuration-driven backup tool built on restic that adds:
+# - YAML-based configuration for all backup jobs
+# - Built-in cron scheduler for automated backups
+# - Healthchecks.io integration for monitoring
+# - Lifecycle hooks (before, success, failure)
+# - Easy snapshot replication between repositories
+# 
+# Configuration file locations (searched in order):
+# 1. Custom file specified with --config flag
+# 2. ./crestic.yaml (current directory)
+# 3. ~/crestic.yaml (home directory)
+# 4. ~/.crestic/crestic.yaml
+# 5. ~/.config/crestic/crestic.yaml
+
+# ============================================================================
+# GLOBAL SETTINGS
+# ============================================================================
+
+# Global healthcheck URL - used for all jobs unless overridden per-job
+# Sign up at https://healthchecks.io to get monitoring URLs
+# Healthcheck URL formats:
+# 1. Without slug: https://hc-ping.com/{uuid}
+# 2. With slug: https://hc-ping.com/{uuid}/{slug}
+healthcheck_url: https://hc-ping.com/your-uuid-here/crestic
+
+# ============================================================================
+# JOBS
+# ============================================================================
+# Jobs define the backup and copy operations to perform.
+# Two job types are supported:
+# 1. backup - Back up directories to a repository
+# 2. copy   - Copy snapshots between repositories
+jobs:
+  # ========================================
+  # BACKUP JOB - Basic Example
+  # ========================================
+  # Backs up local directories to a repository
+  - type: backup
+    name: documents-backup
+    
+    # Source directories to backup (can specify multiple)
+    from:
+      - /home/user/Documents
+      - /home/user/Projects
+      - /home/user/.config
+    
+    # Target repository name (must be defined in repositories section)
+    to: local-repo
+
+    # Optional: Override global healthcheck URL for this specific job
+    # healthcheck_url: https://hc-ping.com/job-specific-uuid/documents-backup
+
+    # ========================================
+    # CRON SCHEDULING
+    # ========================================
+    # Optional: Cron expression for automated backups
+    # Format: minute hour day month weekday
+    # Examples:
+    #   "0 2 * * *"      - Daily at 2:00 AM
+    #   "0 */6 * * *"    - Every 6 hours
+    #   "30 3 * * 0"     - Weekly on Sunday at 3:30 AM
+    #   "0 4 1 * *"      - Monthly on 1st at 4:00 AM
+    #   "0 9,17 * * 1-5" - Weekdays at 9 AM and 5 PM
+    #
+    # To use scheduling:
+    # 1. Set cron expression here
+    # 2. Add to system crontab: */5 * * * * crestic cron --config /path/to/crestic.yaml
+    # 3. Crestic tracks state, so system cron can run every 5-30 minutes
+    cron: "0 2 * * *"  # Run daily at 2 AM
+
+    # Optional: Ignore extended attributes errors (useful for certain filesystems)
+    # ignore_x_attrs_error: false
+
+    # Optional: Additional restic backup options
+    options:
+      # Tags to attach to this backup snapshot
+      tag:
+        - documents
+        - daily
+        - important
+      # Skip backup if no files have changed since last backup
+      skip-if-unchanged: true
+      # Exclude patterns (can specify multiple)
+      exclude:
+        - "*.tmp"
+        - "*.log"
+        - ".cache"
+      # Additional options can be added here as key-value pairs
+      # All restic backup flags are supported
+      # See: https://restic.readthedocs.io/en/stable/040_backup.html
+
+    # ========================================
+    # LIFECYCLE HOOKS
+    # ========================================
+    # Optional: Hooks to run at different stages of the backup process
+    # Environment variables available in hooks:
+    # - CRESTIC_JOB_NAME: name of the job
+    # - CRESTIC_EXIT_CODE: exit code
+    # - CRESTIC_ERROR: error message (only in failure hooks)
+    hooks:
+      # Commands to run before starting the backup
+      before:
+        - echo "Starting backup for $CRESTIC_JOB_NAME..."
+        - /usr/local/bin/pre-backup-script.sh
+      # Commands to run after successful backup
+      success:
+        - echo "Backup completed successfully: $CRESTIC_JOB_NAME"
+        - /usr/local/bin/post-backup-notification.sh success
+      # Commands to run if backup fails
+      failure:
+        - echo "Backup failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
+        - /usr/local/bin/post-backup-notification.sh failure
+
+  # ========================================
+  # COPY JOB
+  # ========================================
+  # Copies snapshots from one repository to another (off-site backup)
+  - type: copy
+    name: documents-copy-to-remote
+    
+    # Source repository name (must be defined in repositories section)
+    from: local-repo
+    
+    # Target repository name (must be defined in repositories section)
+    to: remote-repo
+
+    # Optional: Schedule copy to run after backup completes
+    # Run at 3 AM (1 hour after the 2 AM backup)
+    cron: "0 3 * * *"
+
+    # Optional: Override global healthcheck URL for this specific job
+    # healthcheck_url: https://hc-ping.com/copy-job-uuid/documents-copy
+
+    # Optional: Additional restic copy options
+    # See https://restic.readthedocs.io/en/stable/045_working_with_repos.html#copying-snapshots-between-repositories for all options
+    options:
+      # Tags to filter which snapshots to copy
+      tag:
+        - documents
+        - important
+      # Copy snapshots with specific hostname
+      # host: my-server
+      # Copy snapshots with specific paths
+      # path: /home/user/Documents
+
+    # Optional: Hooks for copy operations
+    hooks:
+      before:
+        - echo "Starting copy operation: $CRESTIC_JOB_NAME"
+      success:
+        - echo "Copy completed successfully: $CRESTIC_JOB_NAME"
+      failure:
+        - echo "Copy failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
+
+# ============================================================================
+# REPOSITORIES
+# ============================================================================
+# Repositories define storage locations for backups.
+# Supported backends:
+# - Local filesystem: /path/to/backup
+# - SFTP: sftp:user@host:/path
+# - S3: s3:https://s3.amazonaws.com/bucket/path
+# - Rclone: rclone:remote:path (Google Drive, Dropbox, OneDrive, etc.)
+# - Azure: azure:container:/path
+# - Google Cloud Storage: gs:bucket:/path
+# See: https://restic.readthedocs.io/en/stable/030_preparing_a_new_repo.html
+repositories:
+  # ========================================
+  # LOCAL FILESYSTEM REPOSITORY
+  # ========================================
+  local-repo:
+    # Path to the repository (local directory)
+    path: /backup/restic/documents
+    
+    # ========================================
+    # PASSWORD MANAGEMENT
+    # ========================================
+    # Command to retrieve repository password securely
+    # NEVER store passwords in plain text!
+    #
+    # Examples by platform:
+    # - macOS Keychain: security find-generic-password -a restic-password -s crestic -w
+    # - Linux keyring: secret-tool lookup service restic password crestic
+    # - Environment variable: echo "$RESTIC_PASSWORD"
+    # - File: cat /secure/path/to/password.txt
+    # - GPG: gpg --decrypt /path/to/password.gpg 2>/dev/null
+    # - File: cat /secure/path/.restic-password
+    password_command: "security find-generic-password -a restic-password -s crestic -w"
+
+    # ========================================
+    # RETENTION POLICY (AUTOMATIC)
+    # ========================================
+    # Optional: Retention policy applied AUTOMATICALLY after each backup
+    # The backup command runs 'restic forget' with these options after every backup
+    # See: https://restic.readthedocs.io/en/stable/060_forget.html
+    forget_options:
+      # Keep the last N snapshots
+      keep-last: 10
+      # Keep N hourly snapshots
+      keep-hourly: 24
+      # Keep N daily snapshots
+      keep-daily: 7
+      # Keep N weekly snapshots
+      keep-weekly: 4
+      # Keep N monthly snapshots
+      keep-monthly: 12
+      # Keep N yearly snapshots
+      keep-yearly: 3
+      
+      # IMPORTANT: Set prune to true to actually free disk space!
+      # Without prune, snapshots are only marked for deletion but data remains
+      prune: true
+      
+      # Keep all snapshots within time duration:
+      # keep-within: "2y5m7d"  # 2 years, 5 months, 7 days
+      # Keep snapshots with specific tags:
+      # keep-tag: ["important", "manual"]
+      # Additional forget options available
+      # See: restic forget --help
+
+  # ========================================
+  # REMOTE REPOSITORY - Rclone
+  # ========================================
+  # Rclone enables backup to cloud storage
+  # Setup: rclone config (configure remote first)
+  remote-repo:
+    # Rclone remote path format: rclone:remote-name:path
+    # Examples:
+    # - rclone:backblaze:bucket-name/restic
+    # - rclone:s3:s3-bucket/restic
+    # - rclone:gdrive:restic-backups
+    # - rclone:dropbox:restic
+    # Make sure rclone is configured before using remote repositories
+    path: rclone:backblaze:my-backups/restic
+    password_command: "cat /secure/path/to/remote-password.txt"
+
+    forget_options:
+      keep-last: 5
+      keep-hourly: 12
+      keep-daily: 7
+      keep-weekly: 4
+      keep-monthly: 6
+      keep-yearly: 2
