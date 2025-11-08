@@ -11,7 +11,7 @@ in a single configuration file and run them with simple commands.
 No hidden logic or magic — just more convenience and fewer chances
 to mess things up while using restic.
 
-➡️📝 **[Full documentation](https://crestic.kolodla.fyi)** 
+➡️📝 **[Full documentation](https://crestic.kolodka.fyi)** 
 
 ## Native features of restic
 
