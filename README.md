@@ -34,7 +34,15 @@ to mess things up while using restic.
 
 ## Installation
 
+### Install via Homebrew
+
 ```bash
-# Install from source (requires Go 1.25+)
+brew tap alexander-kolodka/crestic
+brew install crestic
+```
+
+### Install from source (requires Go 1.25+)
+
+```bash
 go install github.com/alexander-kolodka/crestic@latest
 ```
