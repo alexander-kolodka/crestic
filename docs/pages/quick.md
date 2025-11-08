@@ -4,7 +4,7 @@
 
 ```bash
 # Install from source (requires Go 1.25+)
-go install alexander-kolodka/crestic@latest
+go install github.com/alexander-kolodka/crestic@latest
 ```
 
 ## Basic Configuration
