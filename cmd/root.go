@@ -6,12 +6,14 @@ import (
 
 	"github.com/alexander-kolodka/crestic/internal/logger"
 	"github.com/alexander-kolodka/crestic/internal/shell"
+	"github.com/alexander-kolodka/crestic/internal/version"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "crestic",
-	Short: "Configuration-driven backup tool built on restic",
+	Use:     "crestic",
+	Version: version.String(),
+	Short:   "Configuration-driven backup tool built on restic",
 	Long: `Crestic is a wrapper around restic that adds configuration management,
 scheduling, health monitoring, and lifecycle hooks to your backup workflow.
 
@@ -56,6 +58,7 @@ func Execute(ctx context.Context) error {
 }
 
 func init() {
+	rootCmd.SetVersionTemplate("crestic version {{.Version}}\n")
 	rootCmd.PersistentFlags().
 		StringP("config", "c", "", "config file (default is crestic.yml in current dir,"+
 			" home dir, ~/.crestic/, or ~/.config/crestic/)")
