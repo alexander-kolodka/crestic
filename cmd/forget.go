@@ -77,4 +77,6 @@ func init() {
 	forgetCmd.Flags().BoolP("all", "a", false, "Run forget for all jobs")
 	forgetCmd.Flags().Bool("dry-run", false, "Show what would be deleted without actually deleting")
 	forgetCmd.Flags().Bool("prune", false, "Actually remove the data (frees up space)")
+
+	_ = forgetCmd.RegisterFlagCompletionFunc("repo", repoAutocompletion)
 }

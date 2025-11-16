@@ -66,6 +66,15 @@ func init() {
 	rootCmd.PersistentFlags().Bool("ci", false, "output logs as plain text without colors (for CI/pipelines)")
 	rootCmd.PersistentFlags().Bool("json", false, "output logs in JSON format")
 	rootCmd.PersistentFlags().Bool("print-commands", false, "Print executed shell commands")
+
+	_ = rootCmd.MarkFlagFilename("config", "yaml", "yml")
+
+	_ = rootCmd.RegisterFlagCompletionFunc(
+		"log-level",
+		func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+			return []string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveDefault
+		},
+	)
 }
 
 func logFormat(ci, json bool) logger.Format {
