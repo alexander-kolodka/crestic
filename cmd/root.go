@@ -66,6 +66,8 @@ func init() {
 	rootCmd.PersistentFlags().Bool("ci", false, "output logs as plain text without colors (for CI/pipelines)")
 	rootCmd.PersistentFlags().Bool("json", false, "output logs in JSON format")
 	rootCmd.PersistentFlags().Bool("print-commands", false, "Print executed shell commands")
+
+	rootCmd.SilenceUsage = true
 }
 
 func logFormat(ci, json bool) logger.Format {
