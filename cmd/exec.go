@@ -96,4 +96,6 @@ func init() {
 	execCmd.Flags().
 		StringSliceP("repo", "r", nil, "Repository/repositories to execute command on (can specify multiple)")
 	execCmd.Flags().BoolP("all", "a", false, "Execute on all repositories")
+
+	_ = execCmd.RegisterFlagCompletionFunc("repo", repoAutocompletion)
 }

@@ -63,4 +63,6 @@ func init() {
 	rootCmd.AddCommand(unlockCmd)
 	unlockCmd.Flags().StringSliceP("repo", "r", nil, "Unlock specific repository/repositories (can specify multiple)")
 	unlockCmd.Flags().BoolP("all", "a", false, "Unlock all repositories")
+
+	_ = unlockCmd.RegisterFlagCompletionFunc("repo", repoAutocompletion)
 }
