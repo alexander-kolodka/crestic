@@ -13,6 +13,6 @@ jobs:
         with:
           formula-name: crestic
           homebrew-tap: alexander-kolodka/homebrew-crestic
-          commit-message: "{{version}}"
+          commit-message: "v{{version}}"
         env:
           COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
