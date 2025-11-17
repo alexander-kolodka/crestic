@@ -3,11 +3,12 @@ package cmd
 import (
 	"errors"
 
+	"github.com/spf13/cobra"
+
 	"github.com/alexander-kolodka/crestic/internal/cases/exec"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
-	"github.com/spf13/cobra"
 )
 
 var execCmd = &cobra.Command{

@@ -3,8 +3,9 @@ package logger
 import (
 	"context"
 
-	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/rs/zerolog"
+
+	"github.com/alexander-kolodka/crestic/internal/entity"
 )
 
 // FromContext extracts logger from context or returns global logger.

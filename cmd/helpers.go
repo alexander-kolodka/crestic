@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/rs/zerolog"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
+
+	"github.com/alexander-kolodka/crestic/internal/entity"
 )
 
 // getRepos returns the list of repositories to operate on based on command flags.

@@ -5,13 +5,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/cron"
 	"github.com/alexander-kolodka/crestic/internal/healthchecks"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
-	"github.com/spf13/cobra"
 )
 
 var cronCmd = &cobra.Command{

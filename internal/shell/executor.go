@@ -10,8 +10,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/alexander-kolodka/crestic/internal/logger"
 	"github.com/samber/lo"
+
+	"github.com/alexander-kolodka/crestic/internal/logger"
 )
 
 // Executor runs shell commands with full stdout/stderr logging.

@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/alexander-kolodka/crestic/internal/logger"
 	"github.com/gofrs/flock"
+
+	"github.com/alexander-kolodka/crestic/internal/logger"
 )
 
 // WithLock wraps a handler with file-based locking to prevent concurrent execution.
