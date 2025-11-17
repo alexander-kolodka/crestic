@@ -5,8 +5,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/alexander-kolodka/crestic/internal/entity"
 )
 
 func TestOptions_ToArgs(t *testing.T) {

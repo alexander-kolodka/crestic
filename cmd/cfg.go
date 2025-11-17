@@ -6,9 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/alexander-kolodka/crestic/internal/dto"
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"gopkg.in/yaml.v3"
 )
 
 // findConfigFile searches for config file in priority order:

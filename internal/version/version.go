@@ -4,7 +4,7 @@ import (
 	"runtime/debug"
 )
 
-var Version = "" // can be set via -ldflags
+var Version = "" //nolint:gochecknoglobals // can be set via -ldflags
 
 func String() string {
 	if Version != "" {

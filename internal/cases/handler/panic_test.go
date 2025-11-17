@@ -5,10 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/panix"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/alexander-kolodka/crestic/internal/cases/handler"
+	"github.com/alexander-kolodka/crestic/internal/panix"
 )
 
 func TestWithPanicRecoveryCatchesPanic(t *testing.T) {

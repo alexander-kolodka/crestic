@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -76,7 +77,7 @@ func (c *Client) post(ctx context.Context, baseURL, endpoint, rid string, p Payl
 func buildURL(base, endpoint, rid string) (string, error) {
 	base = strings.TrimSpace(base)
 	if base == "" {
-		return "", fmt.Errorf("empty base URL")
+		return "", errors.New("empty base URL")
 	}
 
 	u, err := neturl.Parse(base)

@@ -3,9 +3,10 @@ package backup
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/healthchecks"
-	"github.com/google/uuid"
 )
 
 // newHealthcheckMw wraps a do func with Healthchecks.io monitoring.

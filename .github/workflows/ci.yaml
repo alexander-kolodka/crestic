@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - run: go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
+      - run: go test -json ./... | go-ctrf-json-reporter -output ctrf-report.json
+      - uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: 'ctrf-report.json'
+
+          summary-report: true
+          annotate: true
+          failed-report: true
+          slowest-report: true
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: always()
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.6

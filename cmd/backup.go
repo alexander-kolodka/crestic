@@ -3,14 +3,15 @@ package cmd
 import (
 	"errors"
 
+	"github.com/samber/lo"
+	"github.com/spf13/cobra"
+
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/healthchecks"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
-	"github.com/samber/lo"
-	"github.com/spf13/cobra"
 )
 
 var backupCmd = &cobra.Command{

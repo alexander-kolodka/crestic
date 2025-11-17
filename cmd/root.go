@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 
+	"github.com/spf13/cobra"
+
 	"github.com/alexander-kolodka/crestic/internal/logger"
 	"github.com/alexander-kolodka/crestic/internal/shell"
 	"github.com/alexander-kolodka/crestic/internal/version"
-	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{

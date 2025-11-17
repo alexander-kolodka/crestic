@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/samber/lo"
+
+	"github.com/alexander-kolodka/crestic/internal/entity"
 )
 
 func ToEntity(cfg Config) (*entity.Config, error) {
