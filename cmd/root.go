@@ -68,6 +68,15 @@ func init() {
 	rootCmd.PersistentFlags().Bool("print-commands", false, "Print executed shell commands")
 
 	rootCmd.SilenceUsage = true
+
+	_ = rootCmd.MarkFlagFilename("config", "yaml", "yml")
+
+	_ = rootCmd.RegisterFlagCompletionFunc(
+		"log-level",
+		func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+			return []string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveDefault
+		},
+	)
 }
 
 func logFormat(ci, json bool) logger.Format {

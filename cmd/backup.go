@@ -81,6 +81,8 @@ func init() {
 	backupCmd.Flags().BoolP("all", "a", false, "Check all repositories")
 	backupCmd.Flags().StringSliceP("job", "j", nil, "Run only specific jobs by name (comma-separated)")
 	backupCmd.Flags().Bool("dry-run", false, "Dry run")
+
+	_ = backupCmd.RegisterFlagCompletionFunc("job", jobAutocompletion)
 }
 
 func filterJobs(cmd *cobra.Command, backups []entity.Job) []entity.Job {

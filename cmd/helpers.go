@@ -58,3 +58,26 @@ func toZerologLevel(level string) zerolog.Level {
 
 	return levels[level]
 }
+
+func jobAutocompletion(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	cfgPath, _ := cmd.Flags().GetString("config")
+	cfg, err := loadConfig(cfgPath)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	jobNames := lo.Map(cfg.Jobs, func(j entity.Job, _ int) string {
+		return j.GetName()
+	})
+
+	return jobNames, cobra.ShellCompDirectiveNoFileComp
+}
+
+func repoAutocompletion(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	cfgPath, _ := cmd.Flags().GetString("config")
+	cfg, err := loadConfig(cfgPath)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	return lo.Keys(cfg.Repositories), cobra.ShellCompDirectiveNoFileComp
+}

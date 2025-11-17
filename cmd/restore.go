@@ -64,6 +64,7 @@ func init() {
 	restoreCmd.Flags().StringP("repo", "r", "", "Restore specific repository (required)")
 	restoreCmd.Flags().StringP("target", "t", "", "Directory to restore to (required)")
 	restoreCmd.Flags().StringP("snapshot", "s", "", "snapshot")
-	_ = restoreCmd.MarkFlagRequired("to")
 	_ = restoreCmd.MarkFlagRequired("target")
+
+	_ = restoreCmd.RegisterFlagCompletionFunc("repo", repoAutocompletion)
 }
