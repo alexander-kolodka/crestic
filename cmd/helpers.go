@@ -8,7 +8,9 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 
+	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/entity"
+	"github.com/alexander-kolodka/crestic/internal/healthchecks"
 )
 
 // getRepos returns the list of repositories to operate on based on command flags.
@@ -81,4 +83,13 @@ func repoAutocompletion(cmd *cobra.Command, _ []string, _ string) ([]string, cob
 		return nil, cobra.ShellCompDirectiveError
 	}
 	return lo.Keys(cfg.Repositories), cobra.ShellCompDirectiveNoFileComp
+}
+
+//nolint:ireturn // can't return struct
+func newHealthChecks(healthcheckURL string, dummy bool) (backup.HealthChecks, error) {
+	if dummy || healthcheckURL == "" {
+		return &healthchecks.Dummy{}, nil
+	}
+
+	return healthchecks.NewClient(healthcheckURL)
 }

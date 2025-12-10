@@ -13,39 +13,50 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/logger"
 )
 
-type Client struct {
-	http *http.Client
+type JobsList struct {
+	Jobs []string `json:"jobs"`
 }
 
-func NewClient() *Client {
+func NewJobsList(jobs []string) *JobsList {
+	return &JobsList{Jobs: jobs}
+}
+
+type Client struct {
+	http    *http.Client
+	baseURL string
+}
+
+func NewClient(baseURL string) (*Client, error) {
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" {
+		return nil, errors.New("empty base URL")
+	}
+
 	const timeout = 3 * time.Second
 	return &Client{
-		http: &http.Client{Timeout: timeout},
-	}
-}
-
-type Payload struct {
-	JobName string `json:"jobName"`
-	Err     string `json:"error,omitempty"`
+		http:    &http.Client{Timeout: timeout},
+		baseURL: baseURL,
+	}, nil
 }
 
 // Start signals the beginning of task execution.
 // Enables tracking of "hanging" tasks that started but never completed.
 // baseURL should be the full healthcheck URL (e.g., https://hc-ping.com/{uuid} or https://hc-ping.com/{uuid}/{slug})
 // rid is the unique run ID for grouping signals.
-func (c *Client) Start(ctx context.Context, baseURL, rid string, p Payload) error {
-	return c.post(ctx, baseURL, "start", rid, p)
+func (c *Client) Start(ctx context.Context, rid string, j *JobsList) error {
+	return c.post(ctx, "start", rid, j)
 }
 
 // Success reports successful task completion.
 // Healthchecks.io automatically calculates duration between /start and this ping.
 // baseURL should be the full healthcheck URL (e.g., https://hc-ping.com/{uuid} or https://hc-ping.com/{uuid}/{slug})
 // rid must match the one passed to Start.
-func (c *Client) Success(ctx context.Context, baseURL, rid string, p Payload) error {
-	return c.post(ctx, baseURL, "", rid, p)
+func (c *Client) Success(ctx context.Context, rid string, r *entity.JobResults) error {
+	return c.post(ctx, "", rid, r)
 }
 
 // Fail reports task failure with error message.
@@ -53,33 +64,39 @@ func (c *Client) Success(ctx context.Context, baseURL, rid string, p Payload) er
 // errMsg is sent in request body and displayed in Healthchecks.io interface.
 // baseURL should be the full healthcheck URL (e.g., https://hc-ping.com/{uuid} or https://hc-ping.com/{uuid}/{slug})
 // rid must match the one passed to Start.
-func (c *Client) Fail(ctx context.Context, baseURL, rid string, p Payload) error {
-	return c.post(ctx, baseURL, "fail", rid, p)
+func (c *Client) Fail(ctx context.Context, rid string, r *entity.JobResults) error {
+	return c.post(ctx, "fail", rid, r)
 }
 
-func (c *Client) post(ctx context.Context, baseURL, endpoint, rid string, p Payload) error {
-	u, err := buildURL(baseURL, endpoint, rid)
+func (c *Client) post(ctx context.Context, endpoint, rid string, p any) error {
+	u, err := buildURL(c.baseURL, endpoint, rid)
 	if err != nil {
+		log := logger.FromContext(ctx)
+		log.Error().Err(err).Msg("failed to build url")
 		return fmt.Errorf("invalid healthcheck URL: %w", err)
 	}
 
 	body, err := json.Marshal(p)
 	if err != nil {
+		log := logger.FromContext(ctx)
+		log.Error().Err(err).Msg("failed to marshal payload")
 		return fmt.Errorf("marshal payload: %w", err)
 	}
 
-	return withRetry(ctx, func() error {
+	err = withRetry(ctx, func() error {
 		return c.doPost(ctx, u, body)
 	})
+	if err != nil {
+		log := logger.FromContext(ctx)
+		log.Error().Err(err).Msg("failed to do post")
+		return err
+	}
+
+	return nil
 }
 
 // buildURL builds https://hc-ping.com/{uuid}[/{slug}][/endpoint][?rid=...]
 func buildURL(base, endpoint, rid string) (string, error) {
-	base = strings.TrimSpace(base)
-	if base == "" {
-		return "", errors.New("empty base URL")
-	}
-
 	u, err := neturl.Parse(base)
 	if err != nil {
 		return "", err

@@ -10,7 +10,6 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/cron"
-	"github.com/alexander-kolodka/crestic/internal/healthchecks"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
 )
@@ -59,10 +58,15 @@ cron expression matches.`,
 			return err
 		}
 
+		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
+		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
+		if err != nil {
+			return err
+		}
+
 		executor := shell.NewExecutor()
-		hcClient := healthchecks.NewClient()
 		h := handler.Chain(
-			backup.NewHandler(restic.NewService(executor), executor, hcClient),
+			backup.NewHandler(restic.NewService(executor), executor, hc),
 			handler.WithPanicRecovery[*backup.Command](),
 			handler.WithLock[*backup.Command](fmt.Sprintf("crestic-cron-%s.lock", fileName)),
 		)
@@ -75,6 +79,7 @@ cron expression matches.`,
 
 func init() {
 	rootCmd.AddCommand(cronCmd)
+	cronCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
 }
 
 func getCfgFileName(cfgPath string) (string, error) {

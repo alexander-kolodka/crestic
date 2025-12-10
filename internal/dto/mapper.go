@@ -27,7 +27,7 @@ func ToEntity(cfg Config) (*entity.Config, error) {
 					missedRepos[j.To] = struct{}{}
 				}
 
-				return toBackupJob(j, repo, cfg.HealthcheckURL)
+				return toBackupJob(j, repo)
 			case CopyJob:
 				from, ok := repos[j.From]
 				if !ok {
@@ -39,7 +39,7 @@ func ToEntity(cfg Config) (*entity.Config, error) {
 					missedRepos[j.To] = struct{}{}
 				}
 
-				return toCopyJob(j, from, to, cfg.HealthcheckURL)
+				return toCopyJob(j, from, to)
 			default:
 			}
 
@@ -68,12 +68,7 @@ func toRepository(name string, repo Repository) *entity.Repository {
 	}
 }
 
-func toBackupJob(b BackupJob, repo *entity.Repository, globalHealthcheckURL string) entity.BackupJob {
-	healthcheckURL := b.HealthcheckURL
-	if healthcheckURL == "" {
-		healthcheckURL = globalHealthcheckURL
-	}
-
+func toBackupJob(b BackupJob, repo *entity.Repository) entity.BackupJob {
 	return entity.BackupJob{
 		Name:                     b.Name,
 		Cron:                     b.Cron,
@@ -82,24 +77,17 @@ func toBackupJob(b BackupJob, repo *entity.Repository, globalHealthcheckURL stri
 		To:                       repo,
 		Options:                  entity.Options(b.Options),
 		Hooks:                    toHooks(b.Hooks),
-		HealthcheckURL:           healthcheckURL,
 	}
 }
 
-func toCopyJob(c CopyJob, from, to *entity.Repository, globalHealthcheckURL string) entity.CopyJob {
-	healthcheckURL := c.HealthcheckURL
-	if healthcheckURL == "" {
-		healthcheckURL = globalHealthcheckURL
-	}
-
+func toCopyJob(c CopyJob, from, to *entity.Repository) entity.CopyJob {
 	return entity.CopyJob{
-		Name:           c.Name,
-		Cron:           c.Cron,
-		From:           from,
-		To:             to,
-		Options:        entity.Options(c.Options),
-		Hooks:          toHooks(c.Hooks),
-		HealthcheckURL: healthcheckURL,
+		Name:    c.Name,
+		Cron:    c.Cron,
+		From:    from,
+		To:      to,
+		Options: entity.Options(c.Options),
+		Hooks:   toHooks(c.Hooks),
 	}
 }
 

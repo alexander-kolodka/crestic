@@ -19,7 +19,7 @@
 # GLOBAL SETTINGS
 # ============================================================================
 
-# Global healthcheck URL - used for all jobs unless overridden per-job
+# Healthcheck URL
 # Sign up at https://healthchecks.io to get monitoring URLs
 # Healthcheck URL formats:
 # 1. Without slug: https://hc-ping.com/{uuid}
@@ -49,9 +49,6 @@ jobs:
     
     # Target repository name (must be defined in repositories section)
     to: local-repo
-
-    # Optional: Override global healthcheck URL for this specific job
-    # healthcheck_url: https://hc-ping.com/job-specific-uuid/documents-backup
 
     # ========================================
     # CRON SCHEDULING
@@ -130,9 +127,6 @@ jobs:
     # Optional: Schedule copy to run after backup completes
     # Run at 3 AM (1 hour after the 2 AM backup)
     cron: "0 3 * * *"
-
-    # Optional: Override global healthcheck URL for this specific job
-    # healthcheck_url: https://hc-ping.com/copy-job-uuid/documents-copy
 
     # Optional: Additional restic copy options
     # See https://restic.readthedocs.io/en/stable/045_working_with_repos.html#copying-snapshots-between-repositories for all options

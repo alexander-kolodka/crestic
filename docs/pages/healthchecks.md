@@ -11,13 +11,6 @@ Crestic integrates with Healthchecks.io to notify you when:
 
 [Healthchecks.io](https://healthchecks.io) is a cron monitoring service that alerts you when jobs fail or don't run on schedule.
 
-## How It Works
-
-1. Crestic sends "start" ping when job begins
-2. Sends "success" ping when job completes successfully
-3. Sends "failure" ping if job fails
-4. Healthchecks alerts you if expected ping doesn't arrive
-
 ## Setup
 
 ### 1. Create Check
@@ -41,8 +34,6 @@ Add healthcheck URL to your configuration:
 
 #### Global Configuration
 
-Apply to all jobs:
-
 ```yaml
 healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef
 
@@ -52,33 +43,37 @@ jobs:
     # ... rest of config
 ```
 
-#### Per-Job Configuration
-
-Different healthcheck for each job:
-
-```yaml
-jobs:
-  - type: backup
-    name: documents
-    healthcheck_url: https://hc-ping.com/uuid-for-documents
-    from: [/home/user/Documents]
-    to: local-documents-repo
-
-  - type: backup
-    name: photos
-    healthcheck_url: https://hc-ping.com/uuid-for-photos
-    from: [/home/user/Photos]
-    to: local-photos-repo
-```
-
 #### With Slug
 
 Add slug to ping URL for better identification:
 
 ```yaml
-healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef/documents-backup
+healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef/daily-backups
 ```
 
+### 3. Enable Healthchecks
+
+Use the `--healthcheck` flag to enable notifications:
+
+#### Manual Backups
+
+```bash
+# Healthcheck disabled by default
+crestic backup --all
+
+# Enable healthcheck explicitly
+crestic backup --all --healthcheck
+```
+
+#### Cron Scheduler
+
+```bash
+# Healthcheck disabled by default
+crestic cron
+
+# Enable healthcheck explicitly
+crestic cron --healthcheck
+```
 ## See Also
 
 - [Hooks Guide](/hooks) - Custom notifications with hooks
