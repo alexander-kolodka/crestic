@@ -17,17 +17,15 @@ type BackupJob struct {
 	To                       string   `yaml:"to"`
 	Options                  Options  `yaml:"options"`
 	Hooks                    Hooks    `yaml:"hooks"`
-	HealthcheckURL           string   `yaml:"healthcheck_url"`
 }
 
 type CopyJob struct {
-	Name           string  `yaml:"name"`
-	Cron           string  `yaml:"cron"`
-	From           string  `yaml:"from"`
-	To             string  `yaml:"to"`
-	Options        Options `yaml:"options"`
-	Hooks          Hooks   `yaml:"hooks"`
-	HealthcheckURL string  `yaml:"healthcheck_url"`
+	Name    string  `yaml:"name"`
+	Cron    string  `yaml:"cron"`
+	From    string  `yaml:"from"`
+	To      string  `yaml:"to"`
+	Options Options `yaml:"options"`
+	Hooks   Hooks   `yaml:"hooks"`
 }
 
 type Repository struct {

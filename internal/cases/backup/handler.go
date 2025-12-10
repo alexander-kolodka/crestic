@@ -4,7 +4,12 @@ import "C"
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/samber/lo"
 
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/healthchecks"
@@ -21,11 +26,11 @@ type Command struct {
 type Handler struct {
 	restic *restic.Service
 	runner *shell.Executor
-	hc     *healthchecks.Client
+	hc     HealthChecks
 }
 
 // NewHandler creates a backup command Handler.
-func NewHandler(restic *restic.Service, runner *shell.Executor, hc *healthchecks.Client) *Handler {
+func NewHandler(restic *restic.Service, runner *shell.Executor, hc HealthChecks) *Handler {
 	return &Handler{
 		restic: restic,
 		runner: runner,
@@ -41,24 +46,25 @@ func (h *Handler) Handle(ctx context.Context, cmd *Command) error {
 
 	fn := chain(
 		h.doJob,
-		newHealthcheckMw(h.hc),
 		newHookMw(h),
 	)
 
-	jobErrors := newJobErrors()
+	rid := uuid.NewString()
+	_ = h.hc.Start(ctx, rid, healthchecks.NewJobsList(toJobList(cmd.Jobs)))
 
+	jobResults := entity.NewJobResults()
 	for _, job := range cmd.Jobs {
+		start := time.Now()
 		err := fn(ctx, job)
-		if err != nil {
-			jobErrors.Add(job.GetName(), err)
-			continue
-		}
+		jobResults.Add(job.GetName(), time.Since(start), err)
 	}
 
-	if jobErrors.HasErrors() {
-		return jobErrors
+	if jobResults.HasErrors() {
+		_ = h.hc.Fail(ctx, rid, jobResults)
+		return errors.New(jobResults.ErrorMsg())
 	}
 
+	_ = h.hc.Success(ctx, rid, jobResults)
 	return nil
 }
 
@@ -179,4 +185,10 @@ func (h *Handler) executeHooks(ctx context.Context, hooks []string) error {
 		}
 	}
 	return nil
+}
+
+func toJobList(jobs []entity.Job) []string {
+	return lo.Map(jobs, func(j entity.Job, _ int) string {
+		return j.GetName()
+	})
 }

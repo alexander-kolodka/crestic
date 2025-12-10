@@ -17,6 +17,6 @@ type HookSuccess struct {
 type HookFailure struct {
 	JobName  string        `json:"JobName"`
 	Elapsed  time.Duration `json:"Elapsed"`
-	Error    string        `json:"Error"`
+	Error    string        `json:"ErrorMsg"`
 	ExitCode int           `json:"ExitCode"`
 }

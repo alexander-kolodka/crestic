@@ -9,7 +9,6 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"github.com/alexander-kolodka/crestic/internal/healthchecks"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
 )
@@ -23,13 +22,11 @@ This command performs a complete backup workflow for each job:
 
 The backup process (automatic):
   1. Runs 'before' hooks (if configured)
-  2. Sends start notification to healthcheck service (if configured)
   3. Checks if repository is initialized (auto-initializes if needed)
   4. Creates encrypted backup snapshot using restic
   5. Verifies repository integrity (restic check)
   6. Applies retention policy (restic forget with forget_options)
-  7. Sends success/failure notification to healthcheck service
-  8. Runs 'success' or 'failure' hooks based on outcome
+  7. Runs 'success' or 'failure' hooks based on outcome
 
 Note: The forget step automatically runs after each backup if forget_options
 are configured in the repository. If --prune flag is set in forget_options,
@@ -62,10 +59,15 @@ Examples:
 			return errors.New("either --job or --all must be specified")
 		}
 
+		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
+		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
+		if err != nil {
+			return err
+		}
+
 		executor := shell.NewExecutor()
-		hcClient := healthchecks.NewClient()
 		h := handler.Chain(
-			backup.NewHandler(restic.NewService(executor), executor, hcClient),
+			backup.NewHandler(restic.NewService(executor), executor, hc),
 			handler.WithPanicRecovery[*backup.Command](),
 		)
 
@@ -82,6 +84,7 @@ func init() {
 	backupCmd.Flags().BoolP("all", "a", false, "Check all repositories")
 	backupCmd.Flags().StringSliceP("job", "j", nil, "Run only specific jobs by name (comma-separated)")
 	backupCmd.Flags().Bool("dry-run", false, "Dry run")
+	backupCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
 
 	_ = backupCmd.RegisterFlagCompletionFunc("job", jobAutocompletion)
 }
