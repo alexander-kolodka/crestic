@@ -58,6 +58,10 @@ cron expression matches.`,
 			return err
 		}
 
+		if len(jobs) == 0 {
+			return nil
+		}
+
 		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
 		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
 		if err != nil {
