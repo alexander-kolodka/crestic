@@ -50,7 +50,7 @@ password_command: "echo \"$RESTIC_PASSWORD\""
 ## Retention Policy
 
 Configure automatic snapshot retention with `forget_options`.
-The backup command runs 'restic forget' with these options after every backup.
+The backup command runs `restic forget` with these options after every backup.
 For more options, see [Removing backup snapshots](https://restic.readthedocs.io/en/stable/060_forget.html).
 
 ```yaml
