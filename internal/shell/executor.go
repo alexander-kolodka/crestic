@@ -57,9 +57,8 @@ func (r *Executor) Run(ctx context.Context, service string, args ...string) *Res
 		cmd.Stdout = &stdoutBuf
 		cmd.Stderr = &stderrBuf
 	} else {
-		shellWriter := logger.NewShellWriter(ctx)
-		cmd.Stdout = io.MultiWriter(shellWriter, &stdoutBuf)
-		cmd.Stderr = io.MultiWriter(shellWriter, &stderrBuf)
+		cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
+		cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
 	}
 
 	err := cmd.Run()
