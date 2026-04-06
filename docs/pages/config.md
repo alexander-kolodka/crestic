@@ -67,7 +67,7 @@ repositories:
 
 ### Global Settings
 
-- `healthcheck_url` - Global healthcheck URL used for all jobs unless overridden per-job
+- `healthcheck_url` - Healthcheck URL
 
 ### Jobs
 

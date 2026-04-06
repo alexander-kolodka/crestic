@@ -14,16 +14,14 @@ type Jobs []Job
 // Job is the interface that all job types (backup, copy) must implement.
 // It provides common methods for accessing job properties.
 type Job interface {
-	GetName() string           // Returns the unique name of the job
-	GetHooks() Hooks           // Returns the lifecycle hooks for the job
-	GetHealthcheckURL() string // Returns the healthcheck URL for monitoring
-	GetCron() string           // Returns the cron expression for scheduling
+	GetName() string // Returns the unique name of the job
+	GetHooks() Hooks // Returns the lifecycle hooks for the job
+	GetCron() string // Returns the cron expression for scheduling
 }
 
 // BackupJob represents a backup operation that backs up directories to a repository.
 type BackupJob struct {
 	Name                     string      // Unique identifier for this backup job
-	HealthcheckURL           string      // Optional healthcheck URL (overrides global setting)
 	Cron                     string      // Cron expression for scheduling (e.g., "0 2 * * *")
 	IgnoreMissingXAttrsError bool        // If true, ignore extended attributes errors during backup
 	From                     []string    // List of source directories to back up
@@ -42,11 +40,6 @@ func (b BackupJob) GetHooks() Hooks {
 	return b.Hooks
 }
 
-// GetHealthcheckURL returns the healthcheck URL for monitoring this backup job.
-func (b BackupJob) GetHealthcheckURL() string {
-	return b.HealthcheckURL
-}
-
 // GetCron returns the cron expression for scheduling this backup job.
 func (b BackupJob) GetCron() string {
 	return b.Cron
@@ -55,13 +48,12 @@ func (b BackupJob) GetCron() string {
 // CopyJob represents a copy operation that replicates snapshots between repositories.
 // This is useful for creating off-site backups or maintaining multiple backup copies.
 type CopyJob struct {
-	Name           string      // Unique identifier for this copy job
-	HealthcheckURL string      // Optional healthcheck URL (overrides global setting)
-	Cron           string      // Cron expression for scheduling (e.g., "0 3 * * *")
-	From           *Repository // Source repository to copy from
-	To             *Repository // Destination repository to copy to
-	Options        Options     // Additional restic copy options (tags, filters, etc.)
-	Hooks          Hooks       // Lifecycle hooks (before, success, failure)
+	Name    string      // Unique identifier for this copy job
+	Cron    string      // Cron expression for scheduling (e.g., "0 3 * * *")
+	From    *Repository // Source repository to copy from
+	To      *Repository // Destination repository to copy to
+	Options Options     // Additional restic copy options (tags, filters, etc.)
+	Hooks   Hooks       // Lifecycle hooks (before, success, failure)
 }
 
 // GetName returns the name of the copy job.
@@ -72,11 +64,6 @@ func (c CopyJob) GetName() string {
 // GetHooks returns the lifecycle hooks configured for this copy job.
 func (c CopyJob) GetHooks() Hooks {
 	return c.Hooks
-}
-
-// GetHealthcheckURL returns the healthcheck URL for monitoring this copy job.
-func (c CopyJob) GetHealthcheckURL() string {
-	return c.HealthcheckURL
 }
 
 // GetCron returns the cron expression for scheduling this copy job.
