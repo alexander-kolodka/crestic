@@ -11,7 +11,6 @@ jobs:
     from: string                    # Required: Source repository name
     to: string                      # Required: Target repository name
     cron: string                    # Optional: Cron expression
-    healthcheck_url: string         # Optional: Job-specific healthcheck URL
     options:                        # Optional: Restic copy options
       key: value
     hooks:                          # Optional: Lifecycle hooks
@@ -70,16 +69,6 @@ cron: "0 4 * * 0"     # Weekly on Sunday at 4:00 AM
 ```
 
 See [Cron Command](/cli/cron) for more details.
-
-### `healthcheck_url`
-
-Override global healthcheck URL for this specific job.
-
-```yaml
-healthcheck_url: https://hc-ping.com/uuid-for-copy/copy-job
-```
-
-See [Healthchecks](/healthchecks) for more details.
 
 ## Options
 
@@ -147,7 +136,6 @@ jobs:
     from: local-repo
     to: remote-repo
     cron: "0 3 * * *"
-    healthcheck_url: https://hc-ping.com/uuid/copy-job
     options:
       tag:
         - documents

@@ -20,7 +20,7 @@ go install github.com/alexander-kolodka/crestic@latest
 Create a `crestic.yaml` file:
 
 ```yaml
-# Global healthcheck URL (optional)
+# Healthcheck URL (optional)
 healthcheck_url: https://hc-ping.com/your-uuid-here
 
 jobs:

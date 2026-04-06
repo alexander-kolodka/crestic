@@ -11,7 +11,6 @@ jobs:
     from: []string                  # Required: Source directories
     to: string                      # Required: Target repository name
     cron: string                    # Optional: Cron expression
-    healthcheck_url: string         # Optional: Job-specific healthcheck URL
     ignore_x_attrs_error: bool      # Optional: Ignore extended attributes errors
     options:                        # Optional: Restic backup options
       key: value
@@ -82,16 +81,6 @@ cron: "0 9,17 * * 1-5" # Weekdays at 9 AM and 5 PM
 3. Crestic tracks state, so system cron can run every 5-30 minutes
 
 See [Cron Command](/cli/cron) for more details.
-
-### `healthcheck_url`
-
-Override global healthcheck URL for this specific job.
-
-```yaml
-healthcheck_url: https://hc-ping.com/uuid-for-documents/documents-backup
-```
-
-See [Healthchecks](/healthchecks) for more details.
 
 ### `ignore_x_attrs_error`
 Some filesystems (e.g. Cryptomator, other FUSE mounts) do not allow reading extended file attributes (xattrs).
@@ -196,7 +185,6 @@ jobs:
       - /home/user/Projects
     to: local-repo
     cron: "0 2 * * *"
-    healthcheck_url: https://hc-ping.com/uuid/documents
     ignore_x_attrs_error: false
     options:
       tag:
