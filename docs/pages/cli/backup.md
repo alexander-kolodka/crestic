@@ -13,12 +13,12 @@ The `--dry-run` flag will do a dry run showing what would have been backed up, b
 The `backup` command performs a complete backup workflow (all steps are automatic):
 
 1. **Sends start ping** to healthcheck service (if configured)
-2. **Runs 'before' hooks** (if configured)
+2. **Runs `before` hooks** (if configured)
 3. **Checks repository** - automatically initializes if not exists
 4. **Creates backup** - encrypted, deduplicated snapshot
 5. **Verifies integrity** - runs `restic check` on repository
 6. **Applies retention policy** - runs `restic forget` with `forget_options`
-7. **Runs 'success' or 'failure' hooks** based on outcome
+7. **Runs `success` or `failure` hooks** based on outcome
 8. **Sends success/failure ping** to healthcheck service
 
 ```bash
