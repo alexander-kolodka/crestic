@@ -9,7 +9,7 @@ brew tap alexander-kolodka/crestic
 brew install crestic
 ```
 
-### Install from source (requires Go 1.25+)
+### Install from source (requires Go 1.26+)
 
 ```bash
 go install github.com/alexander-kolodka/crestic@latest
