@@ -61,8 +61,6 @@ func withRetry(ctx context.Context, fn func() error) error {
 }
 
 // backoffDuration returns 2^(attempt-1) seconds, capped to avoid overflow.
-//
-//nolint:gosec // overflow is prevented by capping shift below 63
 func backoffDuration(attempt int) time.Duration {
 	if attempt < 1 {
 		attempt = 1
