@@ -16,6 +16,7 @@ func FromContext(ctx context.Context) zerolog.Logger {
 // WithBackupJobFields adds job-related fields to context for backup job.
 func WithBackupJobFields(ctx context.Context, job entity.BackupJob) context.Context {
 	return FromContext(ctx).With().
+		Str("pipeline", job.Pipeline).
 		Str("job", job.Name).
 		Str("repo", job.To.Name).
 		Str("repo_path", job.To.Path).
@@ -26,6 +27,7 @@ func WithBackupJobFields(ctx context.Context, job entity.BackupJob) context.Cont
 // WithCopyJobFields adds job-related fields to context for copy job.
 func WithCopyJobFields(ctx context.Context, job entity.CopyJob) context.Context {
 	return FromContext(ctx).With().
+		Str("pipeline", job.Pipeline).
 		Str("job", job.Name).
 		Str("from_repo", job.From.Name).
 		Str("from_repo_path", job.From.Path).

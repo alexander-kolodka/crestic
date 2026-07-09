@@ -2,6 +2,7 @@
   "index": "Home",
   "quick": "Quick Start",
   "config": "Configuration",
+  "pipelines": "Pipelines",
   "jobs": "Jobs",
   "repositories": "Repositories",
   "cli": "CLI",

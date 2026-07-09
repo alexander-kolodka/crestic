@@ -1,0 +1,41 @@
+repositories:
+{{- range .Repos }}
+  {{ .Name }}:
+    path: "{{ .Path }}"
+    password_command: "{{ .PasswordCMD }}"
+    forget_options:
+      keep-last: 3
+      prune: true
+{{- end }}
+
+pipelines:
+{{- range .Pipelines }}
+  - name: {{ .Name }}
+    {{- if .Cron }}
+    cron: "{{ .Cron }}"
+    {{- end }}
+    jobs:
+    {{- range .Jobs }}
+    {{- if eq .Type "backup" }}
+      - type: backup
+        name: {{ .Name }}
+        ignore_x_attrs_error: true
+        from:
+        {{- range .From }}
+          - "{{ . }}"
+        {{- end }}
+        to: {{ .To }}
+        {{- if .Options }}
+        options:
+        {{- range $key, $value := .Options }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
+        {{- end }}
+    {{- else if eq .Type "copy" }}
+      - type: copy
+        name: {{ .Name }}
+        from: {{ .FromRepo }}
+        to: {{ .To }}
+    {{- end }}
+    {{- end }}
+{{- end }}

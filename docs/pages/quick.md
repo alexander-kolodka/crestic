@@ -23,25 +23,27 @@ Create a `crestic.yaml` file:
 # Healthcheck URL (optional)
 healthcheck_url: https://hc-ping.com/your-uuid-here
 
-jobs:
-  - type: backup
-    name: documents
-    from:
-      - /home/user/Documents
-      - /home/user/Projects
-    to: local-repo
+pipelines:
+  - name: documents-nightly
     cron: "0 2 * * *"  # Daily at 2 AM
-    options:
-      tag:
-        - documents
-        - daily
-    hooks:
-      before:
-        - echo "Starting backup..."
-      success:
-        - echo "Backup completed!"
-      failure:
-        - echo "Backup failed!" >&2
+    jobs:
+      - type: backup
+        name: local-backup
+        from:
+          - /home/user/Documents
+          - /home/user/Projects
+        to: local-repo
+        options:
+          tag:
+            - documents
+            - daily
+        hooks:
+          before:
+            - echo "Starting backup..."
+          success:
+            - echo "Backup completed!"
+          failure:
+            - echo "Backup failed!" >&2
 
 repositories:
   local-repo:
@@ -56,8 +58,11 @@ repositories:
 ## Run Your First Backup
 
 ```bash
-# Run a backup (auto-initializes repository if needed)
-crestic backup --job documents
+# Run a specific job (qualified name: pipeline/job)
+crestic backup --job documents-nightly/local-backup
+
+# Or run the entire pipeline
+crestic backup --pipeline documents-nightly
 
 # What happens during backup:
 # 1. Checks/initializes repository
@@ -65,7 +70,7 @@ crestic backup --job documents
 # 3. Verifies integrity (check)
 # 4. Applies retention policy (forget)
 
-# Run all scheduled jobs (use this in system cron)
+# Run all scheduled pipelines (use this in system cron)
 crestic cron
 ```
 
@@ -74,9 +79,9 @@ crestic cron
 Add to your crontab:
 
 ```cron
-# Check for scheduled backups every 5 minutes
+# Check for scheduled pipelines every 5 minutes
 */5 * * * * /usr/local/bin/crestic cron --config /path/to/crestic.yaml
 ```
 
-Crestic keeps track of the last run time,
-so even if it’s executed infrequently, it won’t skip any scheduled jobs.
+Crestic keeps track of per-pipeline last run times,
+so even if it's executed infrequently, it won't skip any scheduled pipelines.

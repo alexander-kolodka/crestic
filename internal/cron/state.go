@@ -11,33 +11,39 @@ import (
 const stateFileName = "crestic-cron-state.json"
 
 type State struct {
+	Pipelines map[string]PipelineState `json:"pipelines"`
+}
+
+type PipelineState struct {
 	LastRun time.Time `json:"last_run"`
 }
 
-// loadState loads the last run time from the state file.
-func loadState() (time.Time, error) {
+func loadState() (State, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to load home dir: %w", err)
+		return State{}, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
 	statePath := filepath.Join(homeDir, ".crestic", stateFileName)
 	data, err := os.ReadFile(statePath)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to read state file: %w", err)
+		return State{}, fmt.Errorf("failed to read state file: %w", err)
 	}
 
 	var state State
 	err = json.Unmarshal(data, &state)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to unmarshal state: %w", err)
+		return State{}, fmt.Errorf("failed to unmarshal state: %w", err)
 	}
 
-	return state.LastRun, nil
+	if state.Pipelines == nil {
+		state.Pipelines = map[string]PipelineState{}
+	}
+
+	return state, nil
 }
 
-// saveState saves the current time as the last run time.
-func saveState(now time.Time) error {
+func saveState(state State) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
@@ -51,8 +57,8 @@ func saveState(now time.Time) error {
 
 	statePath := filepath.Join(cresticDir, stateFileName)
 
-	state := State{
-		LastRun: now,
+	if state.Pipelines == nil {
+		state.Pipelines = map[string]PipelineState{}
 	}
 
 	data, err := json.Marshal(state)

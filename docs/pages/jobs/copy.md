@@ -1,22 +1,23 @@
 # 📨 Copy Job
 
-Copy jobs replicate snapshots from one repository to another. This is useful for creating off-site backups or maintaining multiple backup copies.
+Copy jobs replicate snapshots from one repository to another. This is useful for creating off-site backups or maintaining multiple backup copies. Jobs are defined inside a [pipeline](/pipelines).
 
 ## Configuration Structure
 
 ```yaml
-jobs:
-  - type: copy
-    name: string                    # Required: Unique job name
-    from: string                    # Required: Source repository name
-    to: string                      # Required: Target repository name
-    cron: string                    # Optional: Cron expression
-    options:                        # Optional: Restic copy options
-      key: value
-    hooks:                          # Optional: Lifecycle hooks
-      before: []string
-      success: []string
-      failure: []string
+pipelines:
+  - name: my-pipeline
+    jobs:
+      - type: copy
+        name: string                    # Required: Job name (unique within pipeline)
+        from: string                    # Required: Source repository name
+        to: string                      # Required: Target repository name
+        options:                        # Optional: Restic copy options
+          key: value
+        hooks:                          # Optional: Lifecycle hooks
+          before: []string
+          success: []string
+          failure: []string
 ```
 
 ## Required Fields
@@ -27,12 +28,11 @@ Must be `"copy"`.
 
 ### `name`
 
-Unique identifier for the job. Used in logs and when selecting specific jobs.
+Identifier for the job within the pipeline. Used in logs and CLI as `pipeline/job`.
 
 ```yaml
 name: offsite-copy
 name: documents-to-remote
-name: backup-replication
 ```
 
 ### `from`
@@ -52,23 +52,6 @@ Name of the target repository (must be defined in `repositories` section).
 to: remote-repo
 to: secondary-backup
 ```
-
-## Optional Fields
-
-### `cron`
-
-Cron expression for scheduling automated copy operations.
-
-**Format**: `minute hour day month weekday`
-
-**Examples**:
-```yaml
-cron: "0 3 * * *"      # Daily at 3:00 AM (after backup completes)
-cron: "0 */12 * * *"  # Every 12 hours
-cron: "0 4 * * 0"     # Weekly on Sunday at 4:00 AM
-```
-
-See [Cron Command](/cli/cron) for more details.
 
 ## Options
 
@@ -121,7 +104,7 @@ hooks:
 ```
 
 **Environment variables available in hooks**:
-- `CRESTIC_JOB_NAME` - Name of the job
+- `CRESTIC_JOB_NAME` - Qualified job name (`pipeline/job`)
 - `CRESTIC_EXIT_CODE` - Exit code of the operation
 - `CRESTIC_ERROR` - Error message (only in failure hooks)
 
@@ -130,41 +113,48 @@ See [Hooks](/hooks) for more details.
 ## Complete Example
 
 ```yaml
-jobs:
-  - type: copy
-    name: documents-copy-to-remote
-    from: local-repo
-    to: remote-repo
-    cron: "0 3 * * *"
-    options:
-      tag:
-        - documents
-        - important
-      host: my-server
-    hooks:
-      before:
-        - echo "Starting copy: $CRESTIC_JOB_NAME"
-      success:
-        - echo "Copy completed: $CRESTIC_JOB_NAME"
-      failure:
-        - echo "Copy failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
+pipelines:
+  - name: documents-nightly
+    cron: "0 2 * * *"
+    jobs:
+      - type: backup
+        name: local-backup
+        from: [/home/user/Documents]
+        to: local-repo
+
+      - type: copy
+        name: offsite-copy
+        from: local-repo
+        to: remote-repo
+        options:
+          tag:
+            - documents
+            - important
+          host: my-server
+        hooks:
+          before:
+            - echo "Starting copy: $CRESTIC_JOB_NAME"
+          success:
+            - echo "Copy completed: $CRESTIC_JOB_NAME"
+          failure:
+            - echo "Copy failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
 ```
 
 ## Running Copy Jobs
 
-### Run Specific Job
+### Run Entire Pipeline
 
 ```bash
-crestic backup --job offsite-copy
+crestic backup --pipeline documents-nightly
+```
+
+### Run Specific Copy Job
+
+```bash
+crestic backup --job documents-nightly/offsite-copy
 ```
 
 **Note**: Copy jobs are executed using the `backup` command, not a separate `copy` command.
-
-### Run Multiple Jobs
-
-```bash
-crestic backup --job offsite-copy,another-copy
-```
 
 ### Run All Jobs
 
@@ -197,6 +187,7 @@ and healthcheck notifications are sent for each job individually.
 
 ## See Also
 
+- [Pipelines](/pipelines) - Pipeline configuration and scheduling
 - [Backup Job](/jobs/backup) - Back up directories to repositories
 - [Configuration Guide](/config) - Complete configuration reference
 - [Repositories](/repositories) - Repository setup

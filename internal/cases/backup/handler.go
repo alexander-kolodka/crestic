@@ -56,7 +56,7 @@ func (h *Handler) Handle(ctx context.Context, cmd *Command) error {
 	for _, job := range cmd.Jobs {
 		start := time.Now()
 		err := fn(ctx, job)
-		jobResults.Add(job.GetName(), time.Since(start), err)
+		jobResults.Add(job.GetFullName(), time.Since(start), err)
 	}
 
 	if jobResults.HasErrors() {
@@ -189,6 +189,6 @@ func (h *Handler) executeHooks(ctx context.Context, hooks []string) error {
 
 func toJobList(jobs []entity.Job) []string {
 	return lo.Map(jobs, func(j entity.Job, _ int) string {
-		return j.GetName()
+		return j.GetFullName()
 	})
 }

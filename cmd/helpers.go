@@ -69,11 +69,25 @@ func jobAutocompletion(cmd *cobra.Command, _ []string, _ string) ([]string, cobr
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	jobNames := lo.Map(cfg.Jobs, func(j entity.Job, _ int) string {
-		return j.GetName()
+	jobNames := lo.Map(cfg.AllJobs(), func(j entity.Job, _ int) string {
+		return j.GetFullName()
 	})
 
 	return jobNames, cobra.ShellCompDirectiveNoFileComp
+}
+
+func pipelineAutocompletion(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	cfgPath, _ := cmd.Flags().GetString("config")
+	cfg, err := loadConfig(cfgPath)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	pipelineNames := lo.Map(cfg.Pipelines, func(p entity.Pipeline, _ int) string {
+		return p.Name
+	})
+
+	return pipelineNames, cobra.ShellCompDirectiveNoFileComp
 }
 
 func repoAutocompletion(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {

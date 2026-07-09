@@ -1,12 +1,14 @@
 # 💾 Backup
 
 ```bash
-crestic backup [--all, -a] [--job, -j <name>] [--dry-run]
+crestic backup [--all, -a] [--pipeline, -p <name>] [--job, -j <pipeline/job>] [--dry-run]
 ```
 
-Performs a backup of all jobs if the `-a` or `--all` flag is passed. To only backup some jobs pass one or more `-j` or `--job` flags.
+Performs backup and copy jobs from your configuration.
+`backup` supports two execution modes:
 
-The `--dry-run` flag will do a dry run showing what would have been backed up, but won't touch the actual data.
+- `--pipeline` / `--all`: runs full pipelines (all jobs in pipeline order)
+- `--job`: runs only explicitly selected jobs
 
 ## What It Does
 
@@ -21,19 +23,26 @@ The `backup` command performs a complete backup workflow (all steps are automati
 7. **Runs `success` or `failure` hooks** based on outcome
 8. **Sends success/failure ping** to healthcheck service
 
+## Examples
+
 ```bash
-# All jobs
+# All jobs from all pipelines
 crestic backup --all
 
-# Specific job
-crestic backup --job documents
+# Entire pipeline
+crestic backup --pipeline documents-nightly
+
+# Specific job (qualified name: pipeline/job)
+crestic backup --job documents-nightly/local-backup
 
 # Multiple jobs
-crestic backup --job documents,photos
+crestic backup --job documents-nightly/local-backup,photos-weekly/backup
 
 # Dry run
 crestic backup --all --dry-run
 ```
+
+Only one of `--all`, `--pipeline`, or `--job` can be specified at a time.
 
 ## Automatic Cleanup
 

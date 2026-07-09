@@ -16,35 +16,36 @@ You can also specify a custom file with the `-c path/to/some/config.yaml`
 ```yaml | crestic.yaml
 healthcheck_url: https://hc-ping.com/your-uuid-here
 
-jobs:
-  - type: backup
-    name: documents
-    from:
-      - /home/user/Documents
-      - /home/user/Projects
-    to: local-repo
+pipelines:
+  - name: documents-nightly
     cron: "0 2 * * *"
-    options:
-      tag:
-        - documents
-        - daily
-      exclude:
-        - "*.tmp"
-        - "*.log"
-    hooks:
-      before:
-        - echo "Starting backup..."
-      success:
-        - echo "Backup completed!"
+    jobs:
+      - type: backup
+        name: local-backup
+        from:
+          - /home/user/Documents
+          - /home/user/Projects
+        to: local-repo
+        options:
+          tag:
+            - documents
+            - daily
+          exclude:
+            - "*.tmp"
+            - "*.log"
+        hooks:
+          before:
+            - echo "Starting backup..."
+          success:
+            - echo "Backup completed!"
 
-  - type: copy
-    name: offsite-copy
-    from: local-repo
-    to: remote-repo
-    cron: "0 3 * * *"
-    options:
-      tag:
-        - important
+      - type: copy
+        name: offsite-copy
+        from: local-repo
+        to: remote-repo
+        options:
+          tag:
+            - important
 
 repositories:
   local-repo:
@@ -69,22 +70,17 @@ repositories:
 
 - `healthcheck_url` - Healthcheck URL
 
+### Pipelines
+
+Pipelines group related jobs and define the schedule. See [Pipelines](/pipelines) for detailed documentation.
+
 ### Jobs
 
-Jobs define backup and copy operations. See Jobs section for detailed documentation:
+Jobs define individual backup and copy operations within a pipeline:
 
 - **[Backup Job](/jobs/backup)** - Backs up local directories to a repository
 - **[Copy Job](/jobs/copy)** - Copies snapshots between repositories
 
 ### Repositories
 
-Repositories define storage locations for backups. Supports all restic backends:
-- Local filesystem
-- SFTP
-- S3 and S3-compatible storage
-- Rclone
-- Azure Blob Storage
-- Google Cloud Storage
-- And more!
-
-See [Repositories](/repositories) for detailed configuration.
+Repository definitions. See [Repositories](/repositories) for detailed documentation.

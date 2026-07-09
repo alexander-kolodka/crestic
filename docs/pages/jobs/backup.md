@@ -1,23 +1,24 @@
 # 💾 Backup Job
 
-Backup jobs back up local directories to a restic repository.
+Backup jobs back up local directories to a restic repository. Jobs are defined inside a [pipeline](/pipelines).
 
 ## Configuration Structure
 
 ```yaml
-jobs:
-  - type: backup
-    name: string                    # Required: Unique job name
-    from: []string                  # Required: Source directories
-    to: string                      # Required: Target repository name
-    cron: string                    # Optional: Cron expression
-    ignore_x_attrs_error: bool      # Optional: Ignore extended attributes errors
-    options:                        # Optional: Restic backup options
-      key: value
-    hooks:                          # Optional: Lifecycle hooks
-      before: []string
-      success: []string
-      failure: []string
+pipelines:
+  - name: my-pipeline
+    jobs:
+      - type: backup
+        name: string                    # Required: Job name (unique within pipeline)
+        from: []string                  # Required: Source directories
+        to: string                      # Required: Target repository name
+        ignore_x_attrs_error: bool      # Optional: Ignore extended attributes errors
+        options:                        # Optional: Restic backup options
+          key: value
+        hooks:                          # Optional: Lifecycle hooks
+          before: []string
+          success: []string
+          failure: []string
 ```
 
 ## Required Fields
@@ -28,12 +29,11 @@ Must be `"backup"`.
 
 ### `name`
 
-Unique identifier for the job. Used in logs and when selecting specific jobs.
+Identifier for the job within the pipeline. Used in logs and CLI as `pipeline/job`.
 
 ```yaml
-name: documents-backup
+name: local-backup
 name: photos-daily
-name: system-files
 ```
 
 ### `from`
@@ -60,33 +60,11 @@ to: remote-backup
 
 ## Optional Fields
 
-### `cron`
-
-Cron expression for scheduling automated backups.
-
-**Format**: `minute hour day month weekday`
-
-**Examples**:
-```yaml
-cron: "0 2 * * *"      # Daily at 2:00 AM
-cron: "0 */6 * * *"    # Every 6 hours
-cron: "30 3 * * 0"     # Weekly on Sunday at 3:30 AM
-cron: "0 4 1 * *"      # Monthly on 1st at 4:00 AM
-cron: "0 9,17 * * 1-5" # Weekdays at 9 AM and 5 PM
-```
-
-**To use scheduling**:
-1. Set cron expression in job configuration
-2. Add to system crontab: `*/5 * * * * crestic cron --config /path/to/crestic.yaml`
-3. Crestic tracks state, so system cron can run every 5-30 minutes
-
-See [Cron Command](/cli/cron) for more details.
-
 ### `ignore_x_attrs_error`
 Some filesystems (e.g. Cryptomator, other FUSE mounts) do not allow reading extended file attributes (xattrs).
 When restic encounters such files, it exits with status code 3, which means:
 
->“incomplete metadata for ${file}”
+>"incomplete metadata for ${file}"
 
 However, the backup is still created successfully and only the unreadable xattrs are skipped.
 If you want Crestic to ignore this exit code and treat the backup as successful, enable the option:
@@ -168,7 +146,7 @@ hooks:
 ```
 
 **Environment variables available in hooks**:
-- `CRESTIC_JOB_NAME` - Name of the job
+- `CRESTIC_JOB_NAME` - Qualified job name (`pipeline/job`)
 - `CRESTIC_EXIT_CODE` - Exit code of the operation
 - `CRESTIC_ERROR` - Error message (only in failure hooks)
 
@@ -177,47 +155,55 @@ See [Hooks](/hooks) for more details.
 ## Complete Example
 
 ```yaml
-jobs:
-  - type: backup
-    name: documents-backup
-    from:
-      - /home/user/Documents
-      - /home/user/Projects
-    to: local-repo
+pipelines:
+  - name: documents-nightly
     cron: "0 2 * * *"
-    ignore_x_attrs_error: false
-    options:
-      tag:
-        - documents
-        - daily
-      exclude:
-        - "*.tmp"
-        - "*.log"
-      skip-if-unchanged: true
-    hooks:
-      before:
-        - echo "Starting backup: $CRESTIC_JOB_NAME"
-      success:
-        - echo "Backup completed: $CRESTIC_JOB_NAME"
-      failure:
-        - echo "Backup failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
+    jobs:
+      - type: backup
+        name: local-backup
+        from:
+          - /home/user/Documents
+          - /home/user/Projects
+        to: local-repo
+        ignore_x_attrs_error: false
+        options:
+          tag:
+            - documents
+            - daily
+          exclude:
+            - "*.tmp"
+            - "*.log"
+          skip-if-unchanged: true
+        hooks:
+          before:
+            - echo "Starting backup: $CRESTIC_JOB_NAME"
+          success:
+            - echo "Backup completed: $CRESTIC_JOB_NAME"
+          failure:
+            - echo "Backup failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
 ```
 
 ## Running Backup Jobs
 
+### Run Entire Pipeline
+
+```bash
+crestic backup --pipeline documents-nightly
+```
+
 ### Run Specific Job
 
 ```bash
-crestic backup --job documents-backup
+crestic backup --job documents-nightly/local-backup
 ```
 
 ### Run Multiple Jobs
 
 ```bash
-crestic backup --job documents-backup,photos-backup
+crestic backup --job documents-nightly/local-backup,photos-weekly/backup
 ```
 
-### Run All Backup Jobs
+### Run All Jobs
 
 ```bash
 crestic backup --all
@@ -226,7 +212,7 @@ crestic backup --all
 ### Dry Run
 
 ```bash
-crestic backup --job documents-backup --dry-run
+crestic backup --job documents-nightly/local-backup --dry-run
 ```
 
 ## Error Handling
@@ -244,6 +230,7 @@ and healthcheck notifications are sent for each job individually.
 
 ## See Also
 
+- [Pipelines](/pipelines) - Pipeline configuration and scheduling
 - [Copy Job](/jobs/copy) - Copy snapshots between repositories
 - [Configuration Guide](/config) - Complete configuration reference
 - [Repositories](/repositories) - Repository setup
