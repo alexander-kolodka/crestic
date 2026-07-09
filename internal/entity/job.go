@@ -82,12 +82,13 @@ type Hooks struct {
 	Success []string // Commands to run if the job succeeds
 }
 
-func splitFullName(fullName string) (pipeline, job string, err error) {
+const fullNameParts = 2 // pipeline/job
+
+func splitFullName(fullName string) (string, string, error) {
 	parts := strings.Split(fullName, "/")
-	if len(parts) != 2 {
+	if len(parts) != fullNameParts {
 		return "", "", fmt.Errorf("invalid job name %s", fullName)
 	}
 
-	pipeline, job = parts[0], parts[1]
-	return pipeline, job, nil
+	return parts[0], parts[1], nil
 }

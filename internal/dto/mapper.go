@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -68,7 +69,7 @@ func toPipelines(pipelines Pipelines, repos *repoLookup) (entity.Pipelines, erro
 
 	for _, p := range pipelines {
 		if p.Name == "" {
-			return nil, fmt.Errorf("pipeline name is required")
+			return nil, errors.New("pipeline name is required")
 		}
 		if _, exists := seen[p.Name]; exists {
 			return nil, fmt.Errorf("duplicate pipeline name: %s", p.Name)

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // G501: md5 used only for lock-file name fingerprint, not security
 	"encoding/hex"
 	"fmt"
 	"path/filepath"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/cases/run_pipelines"
+	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/cron"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
@@ -76,12 +76,12 @@ cron expression matches.`,
 		executor := shell.NewExecutor()
 		jobsHandler := backup.NewHandler(restic.NewService(executor), executor, hc)
 		h := handler.Chain(
-			run_pipelines.NewHandler(jobsHandler),
-			handler.WithPanicRecovery[*run_pipelines.Command](),
-			handler.WithLock[*run_pipelines.Command](lockFile),
+			runpipelines.NewHandler(jobsHandler),
+			handler.WithPanicRecovery[*runpipelines.Command](),
+			handler.WithLock[*runpipelines.Command](lockFile),
 		)
 
-		return h.Handle(cmd.Context(), &run_pipelines.Command{
+		return h.Handle(cmd.Context(), &runpipelines.Command{
 			Pipelines: duePipelines,
 			DryRun:    dryRun,
 		})
@@ -99,6 +99,7 @@ func getLockFile(cfgPath string) (string, error) {
 		return "", err
 	}
 
+	//nolint:gosec // G401: md5 is used only for lock-file name fingerprint, not security
 	sum := md5.Sum([]byte(cfgPath))
 	hash := hex.EncodeToString(sum[:])
 

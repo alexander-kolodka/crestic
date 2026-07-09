@@ -9,7 +9,7 @@ import (
 
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/cases/run_pipelines"
+	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
@@ -89,13 +89,13 @@ Examples:
 		}
 
 		runPipelinesHandler := handler.Chain(
-			run_pipelines.NewHandler(jobsHandler),
-			handler.WithPanicRecovery[*run_pipelines.Command](),
+			runpipelines.NewHandler(jobsHandler),
+			handler.WithPanicRecovery[*runpipelines.Command](),
 		)
 
 		all, _ := cmd.Flags().GetBool("all")
 		if all {
-			return runPipelinesHandler.Handle(cmd.Context(), &run_pipelines.Command{
+			return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
 				Pipelines: cfg.Pipelines,
 				DryRun:    dryRun,
 			})
@@ -107,7 +107,7 @@ Examples:
 			return err
 		}
 
-		return runPipelinesHandler.Handle(cmd.Context(), &run_pipelines.Command{
+		return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
 			Pipelines: pipelines,
 			DryRun:    dryRun,
 		})

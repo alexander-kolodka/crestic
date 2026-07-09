@@ -380,6 +380,18 @@ linters:
         - prometheus.ExponentialBuckets.*
         - prometheus.LinearBuckets
 
+    goconst:
+      ignore-string-values:
+        - '--password-command'
+
+    ireturn:
+      allow:
+        - anon
+        - error
+        - empty
+        - stdlib
+        - github.com/alexander-kolodka/crestic/internal/entity.Job
+
     nakedret:
       # Make an issue if func has more lines of code than this setting, and it has naked returns.
       # Default: 30
@@ -476,6 +488,9 @@ linters:
       - text: 'comment on exported \S+ \S+ should be of the form ".+"'
         source: '// ?(nolint|TODO)'
         linters: [ revive, staticcheck ]
+      - path: 'tests/'
+        linters:
+          - gosec
       - path: '_test\.go'
         linters:
           - bodyclose
