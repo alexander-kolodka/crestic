@@ -1,0 +1,32 @@
+---
+description: Crestic project architecture and layer boundaries
+alwaysApply: true
+---
+
+# Architecture
+
+Crestic is a Go CLI wrapper around restic. Config is YAML; pipelines contain jobs (backup, copy).
+
+## Layers
+
+| Layer | Path | Responsibility |
+|-------|------|----------------|
+| CLI | `cmd/` | cobra commands, wiring, flags |
+| Use cases | `internal/cases/{feature}/` | `Handler` + `Command` |
+| Middleware | `internal/cases/handler/` | `Chain`, `WithLock`, `WithPanicRecovery` |
+| Domain | `internal/entity/` | business entities (Job, Pipeline, Config) |
+| DTO | `internal/dto/` | YAML config to entity mapping |
+| Infra | `internal/restic/`, `internal/shell/`, `internal/healthchecks/` | external services |
+
+## Patterns
+
+- New command: `cmd/{cmd}.go` -> handler in `internal/cases/` -> entity/dto as needed
+- Handler chain: `handler.Chain(base, WithPanicRecovery, WithLock)` — see `cmd/cron.go`
+- Job interface (`internal/entity/job.go`): all job types implement `GetName()`, `GetPipeline()`, `GetFullName()`, `GetHooks()`
+- Batch errors: collect and return with `errors.Join()` — see `internal/cases/runpipelines/handler.go`
+
+## Layer boundaries
+
+- CLI must not contain business logic
+- `entity` must not know about YAML or cobra
+- `dto` maps config to entity; handlers work with entity types only

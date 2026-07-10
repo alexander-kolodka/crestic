@@ -1,0 +1,38 @@
+---
+description: Integration and unit test conventions
+globs: tests/**
+alwaysApply: false
+---
+
+# Tests
+
+## Layout
+
+- Integration tests: `tests/` package
+- Unit tests: `*_test.go` next to source in `internal/`
+
+## Integration test harness
+
+Use `tests/harness/` — do not build ad-hoc test environments.
+
+```go
+sb := harness.New(t)          // creates sandbox, calls t.Parallel()
+repo := sb.AddRepo("docs")
+sb.AddPipeline("backup_docs").Backup("PC", []string{src}, repo)
+_, err := sb.Run(ctx, "backup", "--all")
+require.NoError(t, err)
+```
+
+Reference: `tests/harness/sandbox.go`, `tests/backup_test.go`
+
+## Conventions
+
+- Each test: `context.WithTimeout`, `require.*` assertions
+- Tests run the built `bin/crestic` binary — do not mock restic
+- New CLI command: add an isolation test following `tests/check_test.go`, `tests/forget_test.go`
+
+## CI
+
+- Unit: `go test $(go list ./... | grep -v '/tests$')`
+- Integration: `go test ./tests/...` (requires restic installed)
+- See `.github/workflows/ci.yaml`

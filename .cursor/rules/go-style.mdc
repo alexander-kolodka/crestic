@@ -1,0 +1,60 @@
+---
+description: Go coding style for crestic
+globs: **/*.go
+alwaysApply: false
+---
+
+# Go Style
+
+## Error handling
+
+Never use inline error checks. The `noinlineerr` linter enforces this.
+
+```go
+// BAD
+if err := load(); err != nil {
+    return err
+}
+
+// GOOD
+err := load()
+if err != nil {
+    return err
+}
+```
+
+Reference: `internal/dto/mapper.go`, `cmd/cron.go`
+
+## Static errors
+
+Use `errors.New()` for static messages. Use `fmt.Errorf` only when formatting values.
+
+```go
+// BAD
+return fmt.Errorf("pipeline name is required")
+
+// GOOD
+return errors.New("pipeline name is required")
+return fmt.Errorf("duplicate pipeline name: %s", name)
+```
+
+## Package naming
+
+Use single-word package names without underscores: `runpipelines`, not `run_pipelines`.
+
+## Imports
+
+- Local prefix: `github.com/alexander-kolodka/crestic`
+- Group imports: stdlib, third-party, local (goimports)
+
+## nolint
+
+Every `//nolint` directive must include an explanation.
+
+```go
+//nolint:gosec // G501: md5 used only for lock-file name fingerprint, not security
+```
+
+## Logging
+
+Use `internal/logger` helpers. Do not use global loggers (sloglint enforces this).
