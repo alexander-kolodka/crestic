@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"slices"
 
 	"github.com/alexander-kolodka/crestic/internal/entity"
 )
@@ -20,8 +21,8 @@ type (
 // m1 → m2 → m3 → base.
 func chain(base func(ctx context.Context, job entity.Job) error, middlewares ...mw) do {
 	result := base
-	for i := len(middlewares) - 1; i >= 0; i-- {
-		result = middlewares[i](result)
+	for _, v := range slices.Backward(middlewares) {
+		result = v(result)
 	}
 	return result
 }

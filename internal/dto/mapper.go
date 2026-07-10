@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -10,53 +11,122 @@ import (
 )
 
 func ToEntity(cfg Config) (*entity.Config, error) {
-	repos := lo.MapEntries(cfg.Repositories,
-		func(name string, repo Repository) (string, *entity.Repository) {
-			return name, toRepository(name, repo)
-		},
-	)
+	repos := toRepositories(cfg.Repositories)
+	lookup := newRepoLookup(repos)
 
-	missedRepos := make(map[string]struct{})
+	pipelines, err := toPipelines(cfg.Pipelines, lookup)
+	if err != nil {
+		return nil, err
+	}
 
-	jobs := lo.Map(cfg.Jobs,
-		func(job Job, _ int) entity.Job {
-			switch j := job.(type) {
-			case BackupJob:
-				repo, ok := repos[j.To]
-				if !ok {
-					missedRepos[j.To] = struct{}{}
-				}
-
-				return toBackupJob(j, repo)
-			case CopyJob:
-				from, ok := repos[j.From]
-				if !ok {
-					missedRepos[j.From] = struct{}{}
-				}
-
-				to, ok := repos[j.To]
-				if !ok {
-					missedRepos[j.To] = struct{}{}
-				}
-
-				return toCopyJob(j, from, to)
-			default:
-			}
-
-			return nil
-		},
-	)
-
-	missed := lo.Keys(missedRepos)
-	if len(missed) > 0 {
-		return nil, fmt.Errorf("missed repositories: %s", strings.Join(missed, ", "))
+	err = lookup.err()
+	if err != nil {
+		return nil, err
 	}
 
 	return &entity.Config{
 		HealthcheckURL: cfg.HealthcheckURL,
 		Repositories:   repos,
-		Jobs:           jobs,
+		Pipelines:      pipelines,
 	}, nil
+}
+
+type repoLookup struct {
+	repos  map[string]*entity.Repository
+	missed map[string]struct{}
+}
+
+func newRepoLookup(repos map[string]*entity.Repository) *repoLookup {
+	return &repoLookup{repos: repos, missed: make(map[string]struct{})}
+}
+
+func (r *repoLookup) get(name string) *entity.Repository {
+	repo, ok := r.repos[name]
+	if !ok {
+		r.missed[name] = struct{}{}
+	}
+	return repo
+}
+
+func (r *repoLookup) err() error {
+	if len(r.missed) == 0 {
+		return nil
+	}
+	return fmt.Errorf("missed repositories: %s", strings.Join(lo.Keys(r.missed), ", "))
+}
+
+func toRepositories(repos map[string]Repository) map[string]*entity.Repository {
+	return lo.MapEntries(repos,
+		func(name string, repo Repository) (string, *entity.Repository) {
+			return name, toRepository(name, repo)
+		},
+	)
+}
+
+func toPipelines(pipelines Pipelines, repos *repoLookup) (entity.Pipelines, error) {
+	seen := make(map[string]struct{}, len(pipelines))
+	out := make(entity.Pipelines, 0, len(pipelines))
+
+	for _, p := range pipelines {
+		if p.Name == "" {
+			return nil, errors.New("pipeline name is required")
+		}
+		if _, exists := seen[p.Name]; exists {
+			return nil, fmt.Errorf("duplicate pipeline name: %s", p.Name)
+		}
+		seen[p.Name] = struct{}{}
+
+		ep, err := toPipeline(p, repos)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, ep)
+	}
+
+	return out, nil
+}
+
+func toPipeline(p Pipeline, repos *repoLookup) (entity.Pipeline, error) {
+	jobs, err := toJobs(p.Jobs, p.Name, repos)
+	if err != nil {
+		return entity.Pipeline{}, err
+	}
+	return entity.Pipeline{
+		Name: p.Name,
+		Cron: p.Cron,
+		Jobs: jobs,
+	}, nil
+}
+
+func toJobs(jobs Jobs, pipeline string, repos *repoLookup) (entity.Jobs, error) {
+	seen := make(map[string]struct{}, len(jobs))
+	out := make(entity.Jobs, 0, len(jobs))
+
+	for _, job := range jobs {
+		entityJob, err := toJob(job, pipeline, repos)
+		if err != nil {
+			return nil, err
+		}
+		name := entityJob.GetName()
+		if _, exists := seen[name]; exists {
+			return nil, fmt.Errorf("duplicate job name %q in pipeline %q", name, pipeline)
+		}
+		seen[name] = struct{}{}
+		out = append(out, entityJob)
+	}
+
+	return out, nil
+}
+
+func toJob(job Job, pipeline string, repos *repoLookup) (entity.Job, error) {
+	switch j := job.(type) {
+	case BackupJob:
+		return toBackupJob(j, pipeline, repos.get(j.To)), nil
+	case CopyJob:
+		return toCopyJob(j, pipeline, repos.get(j.From), repos.get(j.To)), nil
+	default:
+		return nil, fmt.Errorf("unknown job type in pipeline %q", pipeline)
+	}
 }
 
 func toRepository(name string, repo Repository) *entity.Repository {
@@ -68,10 +138,10 @@ func toRepository(name string, repo Repository) *entity.Repository {
 	}
 }
 
-func toBackupJob(b BackupJob, repo *entity.Repository) entity.BackupJob {
+func toBackupJob(b BackupJob, pipeline string, repo *entity.Repository) entity.BackupJob {
 	return entity.BackupJob{
 		Name:                     b.Name,
-		Cron:                     b.Cron,
+		Pipeline:                 pipeline,
 		IgnoreMissingXAttrsError: b.IgnoreMissingXAttrsError,
 		From:                     b.From,
 		To:                       repo,
@@ -80,14 +150,14 @@ func toBackupJob(b BackupJob, repo *entity.Repository) entity.BackupJob {
 	}
 }
 
-func toCopyJob(c CopyJob, from, to *entity.Repository) entity.CopyJob {
+func toCopyJob(c CopyJob, pipeline string, from, to *entity.Repository) entity.CopyJob {
 	return entity.CopyJob{
-		Name:    c.Name,
-		Cron:    c.Cron,
-		From:    from,
-		To:      to,
-		Options: entity.Options(c.Options),
-		Hooks:   toHooks(c.Hooks),
+		Name:     c.Name,
+		Pipeline: pipeline,
+		From:     from,
+		To:       to,
+		Options:  entity.Options(c.Options),
+		Hooks:    toHooks(c.Hooks),
 	}
 }
 

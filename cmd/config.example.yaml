@@ -27,33 +27,25 @@
 healthcheck_url: https://hc-ping.com/your-uuid-here/crestic
 
 # ============================================================================
-# JOBS
+# PIPELINES
 # ============================================================================
-# Jobs define the backup and copy operations to perform.
-# Two job types are supported:
-# 1. backup - Back up directories to a repository
-# 2. copy   - Copy snapshots between repositories
-jobs:
+# Pipelines group related backup and copy jobs into a single workflow.
+# Schedule cron on the pipeline level — when it runs, all jobs execute sequentially.
+#
+# Run examples:
+#   crestic backup --pipeline documents
+#   crestic backup --job documents/local-backup
+#   crestic backup --all
+pipelines:
   # ========================================
-  # BACKUP JOB - Basic Example
+  # DOCUMENTS PIPELINE
   # ========================================
-  # Backs up local directories to a repository
-  - type: backup
-    name: documents-backup
-    
-    # Source directories to backup (can specify multiple)
-    from:
-      - /home/user/Documents
-      - /home/user/Projects
-      - /home/user/.config
-    
-    # Target repository name (must be defined in repositories section)
-    to: local-repo
-
+  # Backs up local directories, then copies snapshots to remote storage
+  - name: documents
     # ========================================
     # CRON SCHEDULING
     # ========================================
-    # Optional: Cron expression for automated backups
+    # Optional: Cron expression for automated runs
     # Format: minute hour day month weekday
     # Examples:
     #   "0 2 * * *"      - Daily at 2:00 AM
@@ -63,91 +55,103 @@ jobs:
     #   "0 9,17 * * 1-5" - Weekdays at 9 AM and 5 PM
     #
     # To use scheduling:
-    # 1. Set cron expression here
+    # 1. Set cron expression here on the pipeline
     # 2. Add to system crontab: */5 * * * * crestic cron --config /path/to/crestic.yaml
-    # 3. Crestic tracks state, so system cron can run every 5-30 minutes
+    # 3. Crestic tracks per-pipeline state, so system cron can run every 5-30 minutes
     cron: "0 2 * * *"  # Run daily at 2 AM
 
-    # Optional: Ignore extended attributes errors (useful for certain filesystems)
-    # ignore_x_attrs_error: false
+    jobs:
+      # ========================================
+      # BACKUP JOB
+      # ========================================
+      - type: backup
+        name: local-backup
 
-    # Optional: Additional restic backup options
-    options:
-      # Tags to attach to this backup snapshot
-      tag:
-        - documents
-        - daily
-        - important
-      # Skip backup if no files have changed since last backup
-      skip-if-unchanged: true
-      # Exclude patterns (can specify multiple)
-      exclude:
-        - "*.tmp"
-        - "*.log"
-        - ".cache"
-      # Additional options can be added here as key-value pairs
-      # All restic backup flags are supported
-      # See: https://restic.readthedocs.io/en/stable/040_backup.html
+        # Source directories to backup (can specify multiple)
+        from:
+          - /home/user/Documents
+          - /home/user/Projects
+          - /home/user/.config
 
-    # ========================================
-    # LIFECYCLE HOOKS
-    # ========================================
-    # Optional: Hooks to run at different stages of the backup process
-    # Environment variables available in hooks:
-    # - CRESTIC_JOB_NAME: name of the job
-    # - CRESTIC_EXIT_CODE: exit code
-    # - CRESTIC_ERROR: error message (only in failure hooks)
-    hooks:
-      # Commands to run before starting the backup
-      before:
-        - echo "Starting backup for $CRESTIC_JOB_NAME..."
-        - /usr/local/bin/pre-backup-script.sh
-      # Commands to run after successful backup
-      success:
-        - echo "Backup completed successfully: $CRESTIC_JOB_NAME"
-        - /usr/local/bin/post-backup-notification.sh success
-      # Commands to run if backup fails
-      failure:
-        - echo "Backup failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
-        - /usr/local/bin/post-backup-notification.sh failure
+        # Target repository name (must be defined in repositories section)
+        to: local-repo
 
-  # ========================================
-  # COPY JOB
-  # ========================================
-  # Copies snapshots from one repository to another (off-site backup)
-  - type: copy
-    name: documents-copy-to-remote
-    
-    # Source repository name (must be defined in repositories section)
-    from: local-repo
-    
-    # Target repository name (must be defined in repositories section)
-    to: remote-repo
+        # Optional: Ignore extended attributes errors (useful for certain filesystems)
+        # ignore_x_attrs_error: false
 
-    # Optional: Schedule copy to run after backup completes
-    # Run at 3 AM (1 hour after the 2 AM backup)
-    cron: "0 3 * * *"
+        # Optional: Additional restic backup options
+        options:
+          # Tags to attach to this backup snapshot
+          tag:
+            - documents
+            - daily
+            - important
+          # Skip backup if no files have changed since last backup
+          skip-if-unchanged: true
+          # Exclude patterns (can specify multiple)
+          exclude:
+            - "*.tmp"
+            - "*.log"
+            - ".cache"
+          # Additional options can be added here as key-value pairs
+          # All restic backup flags are supported
+          # See: https://restic.readthedocs.io/en/stable/040_backup.html
 
-    # Optional: Additional restic copy options
-    # See https://restic.readthedocs.io/en/stable/045_working_with_repos.html#copying-snapshots-between-repositories for all options
-    options:
-      # Tags to filter which snapshots to copy
-      tag:
-        - documents
-        - important
-      # Copy snapshots with specific hostname
-      # host: my-server
-      # Copy snapshots with specific paths
-      # path: /home/user/Documents
+        # ========================================
+        # LIFECYCLE HOOKS
+        # ========================================
+        # Optional: Hooks to run at different stages of the backup process
+        # Environment variables available in hooks:
+        # - CRESTIC_JOB_NAME: qualified job name (pipeline/job)
+        # - CRESTIC_EXIT_CODE: exit code
+        # - CRESTIC_ERROR: error message (only in failure hooks)
+        hooks:
+          # Commands to run before starting the backup
+          before:
+            - echo "Starting backup for $CRESTIC_JOB_NAME..."
+            - /usr/local/bin/pre-backup-script.sh
+          # Commands to run after successful backup
+          success:
+            - echo "Backup completed successfully: $CRESTIC_JOB_NAME"
+            - /usr/local/bin/post-backup-notification.sh success
+          # Commands to run if backup fails
+          failure:
+            - echo "Backup failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
+            - /usr/local/bin/post-backup-notification.sh failure
 
-    # Optional: Hooks for copy operations
-    hooks:
-      before:
-        - echo "Starting copy operation: $CRESTIC_JOB_NAME"
-      success:
-        - echo "Copy completed successfully: $CRESTIC_JOB_NAME"
-      failure:
-        - echo "Copy failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
+      # ========================================
+      # COPY JOB
+      # ========================================
+      # Copies snapshots from local to remote repository (off-site backup)
+      - type: copy
+        name: offsite-copy
+
+        # Source repository name (must be defined in repositories section)
+        from: local-repo
+
+        # Target repository name (must be defined in repositories section)
+        to: remote-repo
+
+        # Optional: Additional restic copy options
+        # See https://restic.readthedocs.io/en/stable/045_working_with_repos.html#copying-snapshots-between-repositories for all options
+        options:
+          # Tags to filter which snapshots to copy
+          tag:
+            - documents
+            - important
+          # Copy snapshots with specific hostname
+          # host: my-server
+          # Copy snapshots with specific paths
+          # path: /home/user/Documents
+
+        # Optional: Hooks for copy operations
+        hooks:
+          before:
+            - echo "Starting copy operation: $CRESTIC_JOB_NAME"
+          success:
+            - echo "Copy completed successfully: $CRESTIC_JOB_NAME"
+          failure:
+            - echo "Copy failed: $CRESTIC_JOB_NAME - $CRESTIC_ERROR" >&2
 
 # ============================================================================
 # REPOSITORIES

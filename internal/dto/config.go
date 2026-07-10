@@ -3,15 +3,21 @@ package dto
 // Config is the YAML configuration structure.
 type Config struct {
 	Repositories   map[string]Repository `yaml:"repositories"`
-	Jobs           Jobs                  `yaml:"jobs"`
+	Pipelines      Pipelines             `yaml:"pipelines"`
 	HealthcheckURL string                `yaml:"healthcheck_url"`
+	StateDir       string                `yaml:"state_dir"`
+}
+
+type Pipeline struct {
+	Name string `yaml:"name"`
+	Cron string `yaml:"cron"`
+	Jobs Jobs   `yaml:"jobs"`
 }
 
 type Options map[string]any
 
 type BackupJob struct {
 	Name                     string   `yaml:"name"`
-	Cron                     string   `yaml:"cron"`
 	IgnoreMissingXAttrsError bool     `yaml:"ignore_x_attrs_error"`
 	From                     []string `yaml:"from"`
 	To                       string   `yaml:"to"`
@@ -21,7 +27,6 @@ type BackupJob struct {
 
 type CopyJob struct {
 	Name    string  `yaml:"name"`
-	Cron    string  `yaml:"cron"`
 	From    string  `yaml:"from"`
 	To      string  `yaml:"to"`
 	Options Options `yaml:"options"`

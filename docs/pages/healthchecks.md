@@ -37,10 +37,13 @@ Add healthcheck URL to your configuration:
 ```yaml
 healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef
 
-jobs:
-  - type: backup
-    name: documents
-    # ... rest of config
+pipelines:
+  - name: documents-nightly
+    cron: "0 2 * * *"
+    jobs:
+      - type: backup
+        name: local-backup
+        # ... rest of config
 ```
 
 #### With Slug

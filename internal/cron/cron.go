@@ -5,72 +5,82 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
-	"github.com/samber/lo"
 
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/logger"
 )
 
-// FilterJobsByCron filters jobs that should run based on their cron expressions.
-// It automatically loads the last run time from state, checks all jobs that were scheduled
-// to run since then, and saves the current time as the new last run time.
-// If state file doesn't exist (first run), it uses current time as lastRun to avoid running all historical jobs.
-func FilterJobsByCron(ctx context.Context, jobs []entity.Job) ([]entity.Job, error) {
+// FilterPipelinesByCron filters pipelines that should run based on their cron expressions.
+// It loads per-pipeline last run times from state, checks which pipelines were scheduled
+// to run since then, and saves the current time for each due pipeline.
+func FilterPipelinesByCron(ctx context.Context, pipelines entity.Pipelines) (entity.Pipelines, error) {
 	log := logger.FromContext(ctx)
 
 	now := time.Now()
 
-	lastRun, err := loadState()
+	state, err := loadState()
 	if err != nil {
-		log.Warn().Err(err).Msg("Failed to load state, using current time as last run")
-		lastRun = now
+		log.Warn().Err(err).Msg("Failed to load state, using empty state")
+		state = State{Pipelines: map[string]PipelineState{}}
 	}
 
 	cronParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
 
-	jobs = lo.Filter(jobs, func(job entity.Job, _ int) bool {
-		if job.GetCron() == "" {
+	var duePipelines entity.Pipelines
+	stateChanged := false
+
+	for _, pipeline := range pipelines {
+		if pipeline.Cron == "" {
 			log.Debug().
-				Str("job", job.GetName()).
-				Msg("Skip job with no cron expression")
-			return false
+				Str("pipeline", pipeline.Name).
+				Msg("Skip pipeline with no cron expression")
+			continue
 		}
 
-		schedule, parseErr := cronParser.Parse(job.GetCron())
+		schedule, parseErr := cronParser.Parse(pipeline.Cron)
 		if parseErr != nil {
 			log.Warn().Err(parseErr).
-				Str("job", job.GetName()).
-				Str("cron", job.GetCron()).
-				Msg("Failed to parse cron expression, skipping job")
-			return false
+				Str("pipeline", pipeline.Name).
+				Str("cron", pipeline.Cron).
+				Msg("Failed to parse cron expression, skipping pipeline")
+			continue
 		}
 
-		runAt := schedule.Next(lastRun)
+		lastRun, ok := state.Pipelines[pipeline.Name]
+		if !ok {
+			lastRun = PipelineState{LastRun: now}
+		}
+
+		runAt := schedule.Next(lastRun.LastRun)
 		if !runAt.Before(now) {
 			log.Debug().
-				Str("job", job.GetName()).
-				Str("cron", job.GetCron()).
+				Str("pipeline", pipeline.Name).
+				Str("cron", pipeline.Cron).
 				Time("run_at", runAt).
 				Time("now", now).
-				Msg("Skip job")
-			return false
+				Msg("Skip pipeline")
+			continue
 		}
 
 		log.Debug().
-			Str("job", job.GetName()).
-			Str("cron", job.GetCron()).
+			Str("pipeline", pipeline.Name).
+			Str("cron", pipeline.Cron).
 			Time("run_at", runAt).
 			Time("now", now).
-			Msg("Process job")
+			Msg("Process pipeline")
 
-		return true
-	})
-
-	err = saveState(now)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to save state")
-		return nil, err
+		duePipelines = append(duePipelines, pipeline)
+		state.Pipelines[pipeline.Name] = PipelineState{LastRun: now}
+		stateChanged = true
 	}
 
-	return jobs, nil
+	if stateChanged {
+		err = saveState(state)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to save state")
+			return nil, err
+		}
+	}
+
+	return duePipelines, nil
 }

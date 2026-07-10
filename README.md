@@ -6,7 +6,7 @@ Restic is fast, secure, and incredibly capable —
 but once you need to back up several folders to multiple destinations,
 its CLI can quickly become repetitive and hard to manage.
 
-Crestic makes this easier. You define all your repositories and backup jobs
+Crestic makes this easier. You define all your repositories and backup pipelines
 in a single configuration file and run them with simple commands.
 No hidden logic or magic — just more convenience and fewer chances
 to mess things up while using restic.
@@ -26,7 +26,7 @@ to mess things up while using restic.
 
 ## What Crestic adds on top
 
-- Single YAML config for all repositories and jobs
+- Single YAML config for all repositories and pipelines
 - Built-in [healthchecks.io](https://healthchecks.io) support
 - Before / after hooks — run custom commands around backup tasks
 - Password-command support — pull credentials from keychain, pass, scripts, etc.

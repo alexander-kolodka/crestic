@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/md5" //nolint:gosec // G501: md5 used only for lock-file name fingerprint, not security
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
+	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/cron"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
@@ -48,19 +51,21 @@ cron expression matches.`,
 			return err
 		}
 
-		fileName, err := getCfgFileName(cfgPath)
+		lockFile, err := getLockFile(cfgPath)
 		if err != nil {
 			return err
 		}
 
-		jobs, err := cron.FilterJobsByCron(cmd.Context(), cfg.Jobs)
+		duePipelines, err := cron.FilterPipelinesByCron(cmd.Context(), cfg.Pipelines)
 		if err != nil {
 			return err
 		}
 
-		if len(jobs) == 0 {
+		if len(duePipelines) == 0 {
 			return nil
 		}
+
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
 		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
@@ -69,14 +74,16 @@ cron expression matches.`,
 		}
 
 		executor := shell.NewExecutor()
+		jobsHandler := backup.NewHandler(restic.NewService(executor), executor, hc)
 		h := handler.Chain(
-			backup.NewHandler(restic.NewService(executor), executor, hc),
-			handler.WithPanicRecovery[*backup.Command](),
-			handler.WithLock[*backup.Command](fmt.Sprintf("crestic-cron-%s.lock", fileName)),
+			runpipelines.NewHandler(jobsHandler),
+			handler.WithPanicRecovery[*runpipelines.Command](),
+			handler.WithLock[*runpipelines.Command](lockFile),
 		)
 
-		return h.Handle(cmd.Context(), &backup.Command{
-			Jobs: jobs,
+		return h.Handle(cmd.Context(), &runpipelines.Command{
+			Pipelines: duePipelines,
+			DryRun:    dryRun,
 		})
 	},
 }
@@ -84,6 +91,21 @@ cron expression matches.`,
 func init() {
 	rootCmd.AddCommand(cronCmd)
 	cronCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
+}
+
+func getLockFile(cfgPath string) (string, error) {
+	cfgName, err := getCfgFileName(cfgPath)
+	if err != nil {
+		return "", err
+	}
+
+	//nolint:gosec // G401: md5 is used only for lock-file name fingerprint, not security
+	sum := md5.Sum([]byte(cfgPath))
+	hash := hex.EncodeToString(sum[:])
+
+	lockFileName := fmt.Sprintf("crestic-cron-%s-%s.lock", cfgName, hash)
+
+	return lockFileName, nil
 }
 
 func getCfgFileName(cfgPath string) (string, error) {

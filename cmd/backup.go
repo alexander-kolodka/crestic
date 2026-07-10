@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
+	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
@@ -36,14 +38,14 @@ A failure in one backup job doesn't prevent other backups from completing.
 At the end, all errors are collected and returned as a combined error.
 
 Examples:
-  # Backup all configured jobs
+  # Run all jobs from all pipelines
   crestic backup --all
 
-  # Backup specific job
-  crestic backup --job documents
+  # Run all jobs in a pipeline
+  crestic backup --pipeline documents
 
-  # Backup multiple jobs
-  crestic backup --job documents,photos
+  # Run a specific job
+  crestic backup --job documents/local-backup
 
   # Dry run (show what would be backed up)
   crestic backup --all --dry-run`,
@@ -54,10 +56,12 @@ Examples:
 			return err
 		}
 
-		jobs := filterJobs(cmd, cfg.Jobs)
-		if len(jobs) == 0 {
-			return errors.New("either --job or --all must be specified")
+		err = validatePipelinesAndJobs(cmd)
+		if err != nil {
+			return err
 		}
+
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
 		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
@@ -66,33 +70,115 @@ Examples:
 		}
 
 		executor := shell.NewExecutor()
-		h := handler.Chain(
+		jobsHandler := handler.Chain(
 			backup.NewHandler(restic.NewService(executor), executor, hc),
 			handler.WithPanicRecovery[*backup.Command](),
 		)
 
-		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		return h.Handle(cmd.Context(), &backup.Command{
-			Jobs:   jobs,
-			DryRun: dryRun,
+		fullJobNames, _ := cmd.Flags().GetStringSlice("job")
+		jobs, err := extractJobs(cfg, fullJobNames)
+		if err != nil {
+			return err
+		}
+
+		if len(jobs) > 0 {
+			return jobsHandler.Handle(cmd.Context(), &backup.Command{
+				Jobs:   jobs,
+				DryRun: dryRun,
+			})
+		}
+
+		runPipelinesHandler := handler.Chain(
+			runpipelines.NewHandler(jobsHandler),
+			handler.WithPanicRecovery[*runpipelines.Command](),
+		)
+
+		all, _ := cmd.Flags().GetBool("all")
+		if all {
+			return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
+				Pipelines: cfg.Pipelines,
+				DryRun:    dryRun,
+			})
+		}
+
+		pipelineNames, _ := cmd.Flags().GetStringSlice("pipeline")
+		pipelines, err := extractPipelines(cfg, pipelineNames)
+		if err != nil {
+			return err
+		}
+
+		return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
+			Pipelines: pipelines,
+			DryRun:    dryRun,
 		})
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(backupCmd)
-	backupCmd.Flags().BoolP("all", "a", false, "Check all repositories")
-	backupCmd.Flags().StringSliceP("job", "j", nil, "Run only specific jobs by name (comma-separated)")
+	backupCmd.Flags().BoolP("all", "a", false, "Run all jobs from all pipelines")
+	backupCmd.Flags().
+		StringSliceP("job", "j", nil, "Run specific jobs by qualified name pipeline/job (comma-separated)")
+	backupCmd.Flags().StringSliceP("pipeline", "p", nil, "Run all jobs in specific pipelines by name (comma-separated)")
 	backupCmd.Flags().Bool("dry-run", false, "Dry run")
 	backupCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
 
 	_ = backupCmd.RegisterFlagCompletionFunc("job", jobAutocompletion)
+	_ = backupCmd.RegisterFlagCompletionFunc("pipeline", pipelineAutocompletion)
 }
 
-func filterJobs(cmd *cobra.Command, backups []entity.Job) []entity.Job {
-	all, _ := cmd.Flags().GetBool("all")
-	jNames, _ := cmd.Flags().GetStringSlice("job")
-	return lo.Filter(backups, func(b entity.Job, _ int) bool {
-		return all || lo.Contains(jNames, b.GetName())
+func extractJobs(cfg *entity.Config, fullJobNames []string) ([]entity.Job, error) {
+	return lo.MapErr(fullJobNames, func(name string, _ int) (entity.Job, error) {
+		return cfg.FindJob(name)
 	})
+}
+
+func extractPipelines(cfg *entity.Config, pipelines []string) ([]entity.Pipeline, error) {
+	return lo.MapErr(pipelines, func(name string, _ int) (entity.Pipeline, error) {
+		p, ok := cfg.FindPipeline(name)
+		if !ok {
+			return entity.Pipeline{}, fmt.Errorf("can't find pipeline %s", name)
+		}
+
+		return p, nil
+	})
+}
+
+func validatePipelinesAndJobs(cmd *cobra.Command) error {
+	err := assertNoPipelinesJobsConflict(cmd)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func assertNoPipelinesJobsConflict(cmd *cobra.Command) error {
+	all, _ := cmd.Flags().GetBool("all")
+	pipelineNames, _ := cmd.Flags().GetStringSlice("pipeline")
+	jobNames, _ := cmd.Flags().GetStringSlice("job")
+
+	count := 0
+
+	if all {
+		count++
+	}
+
+	if len(pipelineNames) > 0 {
+		count++
+	}
+
+	if len(jobNames) > 0 {
+		count++
+	}
+
+	if count > 1 {
+		return errors.New("--all, --pipeline and --job are mutually exclusive")
+	}
+
+	if count == 0 {
+		return errors.New("either --all, --pipeline or --job must be specified")
+	}
+
+	return nil
 }

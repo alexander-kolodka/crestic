@@ -16,7 +16,7 @@ func newHookMw(h hookExecutor) mw {
 	return func(fn do) do {
 		return func(ctx context.Context, j entity.Job) error {
 			hooks := j.GetHooks()
-			jName := j.GetName()
+			jName := j.GetFullName()
 
 			err := h.executeHooks(withEnv(ctx, jName, nil), hooks.Before)
 			if err != nil {
