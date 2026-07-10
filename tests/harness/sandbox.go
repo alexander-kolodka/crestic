@@ -96,21 +96,6 @@ func (s *Sandbox) AddPipeline(name string) *PipelineBuilder {
 	}
 }
 
-func (s *Sandbox) ensureConfig() {
-	if s.configPath != "" {
-		return
-	}
-
-	tmpl, err := template.New("config").Parse(configTemplate)
-	require.NoError(s.t, err)
-
-	var buf bytes.Buffer
-	require.NoError(s.t, tmpl.Execute(&buf, s.config))
-
-	s.configPath = filepath.Join(s.root, "crestic.yaml")
-	require.NoError(s.t, os.WriteFile(s.configPath, buf.Bytes(), filePerm))
-}
-
 // WriteCronState seeds the cron state file for a pipeline with the given last run time.
 func (s *Sandbox) WriteCronState(pipeline string, lastRun time.Time) {
 	s.t.Helper()
@@ -150,4 +135,19 @@ func (s *Sandbox) Run(ctx context.Context, args ...string) (string, error) {
 	}
 
 	return stdout.String(), nil
+}
+
+func (s *Sandbox) ensureConfig() {
+	if s.configPath != "" {
+		return
+	}
+
+	tmpl, err := template.New("config").Parse(configTemplate)
+	require.NoError(s.t, err)
+
+	var buf bytes.Buffer
+	require.NoError(s.t, tmpl.Execute(&buf, s.config))
+
+	s.configPath = filepath.Join(s.root, "crestic.yaml")
+	require.NoError(s.t, os.WriteFile(s.configPath, buf.Bytes(), filePerm))
 }
