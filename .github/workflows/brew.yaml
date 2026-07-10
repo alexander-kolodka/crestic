@@ -8,11 +8,59 @@ jobs:
   homebrew:
     name: Bump Homebrew formula
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: mislav/bump-homebrew-formula-action@v4
-        with:
-          formula-name: crestic
-          homebrew-tap: alexander-kolodka/homebrew-crestic
-          commit-message: "v{{version}}"
+      # Inline bump replaces mislav/bump-homebrew-formula-action@v4.
+      # The action HEADs the release tarball URL and accepts only HTTP 302;
+      # GitHub now returns 303 for authenticated requests, causing:
+      #   Error: unexpected HTTP 303 response
+      # See: https://github.com/mislav/bump-homebrew-formula-action/issues/340
+      - name: Update Homebrew formula
         env:
           COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
+          REF: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${REF#v}"
+          ARCHIVE_URL="https://github.com/${REPO}/archive/refs/tags/${REF}.tar.gz"
+
+          echo "::group::Compute tarball sha256"
+          SHA256="$(curl --fail --silent --location "$ARCHIVE_URL" | sha256sum | awk '{print $1}')"
+          test -n "$SHA256"
+          echo "sha256: $SHA256"
+          echo "::endgroup::"
+
+          echo "::group::Clone tap"
+          git clone \
+            --depth 1 \
+            "https://x-access-token:${COMMITTER_TOKEN}@github.com/alexander-kolodka/homebrew-crestic.git" \
+            tap
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "::endgroup::"
+
+          echo "::group::Patch Formula/crestic.rb"
+          sed -i -E \
+            -e "s|^([[:space:]]*url[[:space:]]+)\"[^\"]+\"|\1\"${ARCHIVE_URL}\"|" \
+            -e "s|^([[:space:]]*sha256[[:space:]]+)\"[^\"]+\"|\1\"${SHA256}\"|" \
+            Formula/crestic.rb
+          git --no-pager diff Formula/crestic.rb
+          echo "::endgroup::"
+
+          if git diff --quiet Formula/crestic.rb; then
+            echo "Formula already at ${REF}; nothing to do."
+            exit 0
+          fi
+
+          echo "::group::Commit & push"
+          git add Formula/crestic.rb
+          git commit -m "v${VERSION}
+
+          Created by ${RUN_URL}"
+          git push origin HEAD:main
+          echo "::endgroup::"
