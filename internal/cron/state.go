@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-const stateFileName = "crestic-cron-state.json"
-
 type State struct {
 	Pipelines map[string]PipelineState `json:"pipelines"`
 }
@@ -18,13 +16,13 @@ type PipelineState struct {
 	LastRun time.Time `json:"last_run"`
 }
 
-func loadState() (State, error) {
+func loadState(stateFile string) (State, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return State{}, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	statePath := filepath.Join(homeDir, ".crestic", stateFileName)
+	statePath := filepath.Join(homeDir, ".crestic", stateFile)
 	data, err := os.ReadFile(statePath)
 	if err != nil {
 		return State{}, fmt.Errorf("failed to read state file: %w", err)
@@ -43,7 +41,7 @@ func loadState() (State, error) {
 	return state, nil
 }
 
-func saveState(state State) error {
+func saveState(stateFile string, state State) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
@@ -55,7 +53,7 @@ func saveState(state State) error {
 		return fmt.Errorf("failed to create .crestic directory: %w", err)
 	}
 
-	statePath := filepath.Join(cresticDir, stateFileName)
+	statePath := filepath.Join(cresticDir, stateFile)
 
 	if state.Pipelines == nil {
 		state.Pipelines = map[string]PipelineState{}

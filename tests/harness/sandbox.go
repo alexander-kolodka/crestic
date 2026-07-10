@@ -8,11 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/alexander-kolodka/crestic/internal/cron"
 )
 
 const (
@@ -99,17 +102,24 @@ func (s *Sandbox) AddPipeline(name string) *PipelineBuilder {
 // WriteCronState seeds the cron state file for a pipeline with the given last run time.
 func (s *Sandbox) WriteCronState(pipeline string, lastRun time.Time) {
 	s.t.Helper()
+	s.ensureConfig()
 
-	state := cronState{
-		Pipelines: map[string]cronPipelineState{
+	canonicalPath, err := cron.CanonicalConfigPath(s.configPath)
+	require.NoError(s.t, err)
+
+	cfgBasename := strings.TrimSuffix(filepath.Base(canonicalPath), filepath.Ext(canonicalPath))
+	stateFileName := cron.StateFileName(canonicalPath, cfgBasename)
+
+	state := cron.State{
+		Pipelines: map[string]cron.PipelineState{
 			pipeline: {LastRun: lastRun},
 		},
 	}
 
-	data, err := json.Marshal(state)
-	require.NoError(s.t, err)
+	data, marshalErr := json.Marshal(state)
+	require.NoError(s.t, marshalErr)
 
-	statePath := filepath.Join(s.root, ".crestic", cronStateFileName)
+	statePath := filepath.Join(s.root, ".crestic", stateFileName)
 	err = os.WriteFile(statePath, data, filePerm)
 	require.NoError(s.t, err)
 }
