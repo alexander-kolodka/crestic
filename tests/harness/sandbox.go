@@ -3,12 +3,14 @@ package harness
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -109,6 +111,24 @@ func (s *Sandbox) ensureConfig() {
 	require.NoError(s.t, os.WriteFile(s.configPath, buf.Bytes(), filePerm))
 }
 
+// WriteCronState seeds the cron state file for a pipeline with the given last run time.
+func (s *Sandbox) WriteCronState(pipeline string, lastRun time.Time) {
+	s.t.Helper()
+
+	state := cronState{
+		Pipelines: map[string]cronPipelineState{
+			pipeline: {LastRun: lastRun},
+		},
+	}
+
+	data, err := json.Marshal(state)
+	require.NoError(s.t, err)
+
+	statePath := filepath.Join(s.root, ".crestic", cronStateFileName)
+	err = os.WriteFile(statePath, data, filePerm)
+	require.NoError(s.t, err)
+}
+
 // Run executes crestic CLI with the sandbox config and returns captured stdout.
 func (s *Sandbox) Run(ctx context.Context, args ...string) (string, error) {
 	s.t.Helper()
@@ -117,6 +137,7 @@ func (s *Sandbox) Run(ctx context.Context, args ...string) (string, error) {
 	fullArgs := append([]string{"--config", s.configPath, "--log-level", "error"}, args...)
 	command := exec.CommandContext(ctx, CresticBin(), fullArgs...)
 	command.Dir = s.root
+	command.Env = append(os.Environ(), "HOME="+s.root)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
