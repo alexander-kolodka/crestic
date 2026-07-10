@@ -1,0 +1,27 @@
+---
+description: Documentation update requirements
+globs: docs/**
+alwaysApply: false
+---
+
+# Documentation
+
+Docs site uses Nextra in `docs/pages/`.
+
+## When to update
+
+If you change CLI behavior, config schema, or flags, also update:
+
+- Relevant page in `docs/pages/` (cli, jobs, config, pipelines)
+- `cmd/config.example.yaml`
+
+## Structure
+
+- CLI commands: `docs/pages/cli/`
+- Job types: `docs/pages/jobs/`
+- Config reference: `docs/pages/config.md`
+- Pipelines: `docs/pages/pipelines.md`
+
+## New pages
+
+When adding a new doc page, update the corresponding `_meta.json` in that directory.
