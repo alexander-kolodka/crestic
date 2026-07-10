@@ -291,3 +291,21 @@ func TestBackup_NoFlags(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "either --all, --pipeline or --job must be specified")
 }
+
+func TestBackup_MissingRepository(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	sb := harness.New(t)
+	src := sb.Mkdir("src")
+	sb.WriteFile("src", "file.txt", "hello")
+
+	missing := &harness.RepoDir{Name: "nonexistent"}
+	sb.AddPipeline("backup_docs").
+		Backup("PC", []string{src}, missing)
+
+	_, err := sb.Run(ctx, "backup", "--all")
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missed repositories: nonexistent")
+}
