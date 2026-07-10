@@ -29,6 +29,7 @@ type Sandbox struct {
 // New creates an empty sandbox with only a temp root and state directory.
 func New(t *testing.T) *Sandbox {
 	t.Helper()
+	t.Parallel()
 
 	root := t.TempDir()
 	stateDir := filepath.Join(root, ".crestic")

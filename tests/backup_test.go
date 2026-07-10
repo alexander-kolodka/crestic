@@ -205,9 +205,6 @@ func TestBackup_DryRunSingleJob(t *testing.T) {
 }
 
 func TestBackup_FlagConflict(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
 	tests := []struct {
 		name string
 		args []string
@@ -233,6 +230,9 @@ func TestBackup_FlagConflict(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := harness.New(t)
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
 
 			_, err := sb.Run(ctx, append([]string{"backup"}, tt.args...)...)
 

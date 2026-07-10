@@ -16,16 +16,37 @@ jobs:
         with:
           go-version: stable
       - run: go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
-      - run: go test -json ./... | go-ctrf-json-reporter -output ctrf-report.json
-      - uses: ctrf-io/github-test-reporter@v1
+      - name: Run unit tests
+        run: go test -json $(go list ./... | grep -v '/tests$') | go-ctrf-json-reporter -output ctrf-unit.json
+      - run: |
+          RESTIC_VERSION=0.19.0
+          curl -fsSL "https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_amd64.bz2" | bunzip2 > restic
+          chmod +x restic
+          sudo mv restic /usr/local/bin/
+          restic version
+      - run: go build -o bin/crestic .
+      - name: Run integration tests
+        run: go test -json -parallel 4 ./tests/... | go-ctrf-json-reporter -output ctrf-integration.json
+      - name: Publish unit test report
+        uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: 'ctrf-report.json'
-
+          report-path: 'ctrf-unit.json'
+          title: 'Unit Tests'
+          summary-report: true
+          annotate: true
+          failed-report: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: always()
+      - name: Publish integration test report
+        uses: ctrf-io/github-test-reporter@v1
+        with:
+          report-path: 'ctrf-integration.json'
+          title: 'Integration Tests'
           summary-report: true
           annotate: true
           failed-report: true
           slowest-report: true
-
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: always()
