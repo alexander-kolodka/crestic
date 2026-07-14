@@ -166,11 +166,11 @@ crestic backup --all
 
 The copy operation:
 
-1. **Sends start ping** to healthcheck service (if configured)
-2. **Runs `before` hooks** (if configured)
-3. **Copies snapshots** from source to target repository
-4. **Runs `success` or `failure` hooks** based on outcome
-5. **Sends success/failure ping** to healthcheck service
+1. **Runs `before` hooks** (if configured)
+2. **Copies snapshots** from source to target repository
+3. **Runs `success` or `failure` hooks** based on outcome
+
+Pipeline-level healthcheck pings (when enabled) wrap the whole pipeline, not individual copy jobs. See [Healthchecks](/healthchecks).
 
 ## Error Handling
 

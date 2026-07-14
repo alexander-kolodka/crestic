@@ -18,6 +18,7 @@ When a pipeline's cron triggers, all its jobs run **sequentially** in config ord
 pipelines:
   - name: string          # Required: Unique pipeline name
     cron: string          # Optional: Cron expression for scheduling
+    healthcheck_url: string  # Optional: Healthchecks.io ping URL
     jobs:                 # Required: List of jobs to run
       - type: backup
         name: string
@@ -61,10 +62,18 @@ cron: "30 3 * * 0"     # Weekly on Sunday at 3:30 AM
 
 **To use scheduling**:
 1. Set cron expression on the pipeline
-2. Add to system crontab: `*/5 * * * * crestic cron --config /path/to/crestic.yaml`
+2. Add to system crontab: `*/5 * * * * crestic cron --config /path/to/crestic.yaml --healthcheck`
 3. Crestic tracks per-pipeline state, so system cron can run every 5-30 minutes
 
 See [Cron Command](/cli/cron) for more details.
+
+### `healthcheck_url`
+
+Optional [Healthchecks.io](/healthchecks) ping URL for this pipeline. Match the check schedule to the pipeline `cron`. Pings are sent only when `--healthcheck` is passed.
+
+```yaml
+healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef
+```
 
 ## Complete Example
 
@@ -72,6 +81,7 @@ See [Cron Command](/cli/cron) for more details.
 pipelines:
   - name: documents-nightly
     cron: "0 2 * * *"
+    healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef
     jobs:
       - type: backup
         name: local-backup

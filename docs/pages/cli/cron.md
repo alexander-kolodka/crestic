@@ -1,7 +1,7 @@
 # ⏱️ Cron
 
 ```bash
-crestic cron
+crestic cron [--healthcheck] [--dry-run]
 ```
 
 Run scheduled pipelines based on cron expressions.
@@ -16,6 +16,7 @@ When launched, it:
 - Passes due pipelines to the pipeline runner use case
 - Executes all jobs in each due pipeline sequentially
 - Remembers last run time per pipeline (won't miss scheduled runs)
+- Optionally sends healthcheck pings when `--healthcheck` is set and the pipeline has `healthcheck_url`
 
 ## Locking behavior
 - Only one instance of `crestic cron` can run per configuration file
@@ -32,8 +33,11 @@ When launched, it:
 # Run scheduled pipelines (typically called from system cron)
 crestic cron
 
+# With healthchecks
+crestic cron --healthcheck
+
 # Add to system crontab
-*/5 * * * * /usr/local/bin/crestic cron --config /path/to/crestic.yaml
+*/5 * * * * /usr/local/bin/crestic cron --config /path/to/crestic.yaml --healthcheck
 ```
 
 ## Scheduling
@@ -44,6 +48,7 @@ Define cron expressions on pipelines, not individual jobs:
 pipelines:
   - name: documents-nightly
     cron: "0 2 * * *"      # Daily at 2 AM
+    healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef
     jobs:
       - type: backup
         name: local-backup

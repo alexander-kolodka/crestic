@@ -16,17 +16,6 @@
 # 5. ~/.config/crestic/crestic.yaml
 
 # ============================================================================
-# GLOBAL SETTINGS
-# ============================================================================
-
-# Healthcheck URL
-# Sign up at https://healthchecks.io to get monitoring URLs
-# Healthcheck URL formats:
-# 1. Without slug: https://hc-ping.com/{uuid}
-# 2. With slug: https://hc-ping.com/{uuid}/{slug}
-healthcheck_url: https://hc-ping.com/your-uuid-here/crestic
-
-# ============================================================================
 # PIPELINES
 # ============================================================================
 # Pipelines group related backup and copy jobs into a single workflow.
@@ -56,9 +45,20 @@ pipelines:
     #
     # To use scheduling:
     # 1. Set cron expression here on the pipeline
-    # 2. Add to system crontab: */5 * * * * crestic cron --config /path/to/crestic.yaml
+    # 2. Add to system crontab: */5 * * * * crestic cron --config /path/to/crestic.yaml --healthcheck
     # 3. Crestic tracks per-pipeline state, so system cron can run every 5-30 minutes
     cron: "0 2 * * *"  # Run daily at 2 AM
+
+    # ========================================
+    # HEALTHCHECK (optional)
+    # ========================================
+    # Sign up at https://healthchecks.io to get monitoring URLs
+    # Match the check schedule to this pipeline's cron.
+    # Enable pings with --healthcheck on backup/cron.
+    # Formats:
+    # 1. Without slug: https://hc-ping.com/{uuid}
+    # 2. With slug: https://hc-ping.com/{uuid}/{slug}
+    healthcheck_url: https://hc-ping.com/your-uuid-here/documents
 
     jobs:
       # ========================================

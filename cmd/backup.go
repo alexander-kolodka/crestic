@@ -63,6 +63,7 @@ Examples:
 		}
 
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
+		healthcheck, _ := cmd.Flags().GetBool("healthcheck")
 
 		executor := shell.NewExecutor()
 		jobRunner := jobs.NewRunner(restic.NewService(executor), executor)
@@ -93,8 +94,9 @@ Examples:
 		all, _ := cmd.Flags().GetBool("all")
 		if all {
 			return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
-				Pipelines: cfg.Pipelines,
-				DryRun:    dryRun,
+				Pipelines:   cfg.Pipelines,
+				DryRun:      dryRun,
+				Healthcheck: healthcheck,
 			})
 		}
 
@@ -105,8 +107,9 @@ Examples:
 		}
 
 		return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
-			Pipelines: pipelines,
-			DryRun:    dryRun,
+			Pipelines:   pipelines,
+			DryRun:      dryRun,
+			Healthcheck: healthcheck,
 		})
 	},
 }
@@ -118,6 +121,7 @@ func init() {
 		StringSliceP("job", "j", nil, "Run specific jobs by qualified name pipeline/job (comma-separated)")
 	backupCmd.Flags().StringSliceP("pipeline", "p", nil, "Run all jobs in specific pipelines by name (comma-separated)")
 	backupCmd.Flags().Bool("dry-run", false, "Dry run")
+	backupCmd.Flags().Bool("healthcheck", false, "Send healthcheck pings for pipelines with healthcheck_url")
 
 	_ = backupCmd.RegisterFlagCompletionFunc("job", jobAutocompletion)
 	_ = backupCmd.RegisterFlagCompletionFunc("pipeline", pipelineAutocompletion)

@@ -25,9 +25,8 @@ func ToEntity(cfg Config) (*entity.Config, error) {
 	}
 
 	return &entity.Config{
-		HealthcheckURL: cfg.HealthcheckURL,
-		Repositories:   repos,
-		Pipelines:      pipelines,
+		Repositories: repos,
+		Pipelines:    pipelines,
 	}, nil
 }
 
@@ -92,9 +91,10 @@ func toPipeline(p Pipeline, repos *repoLookup) (entity.Pipeline, error) {
 		return entity.Pipeline{}, err
 	}
 	return entity.Pipeline{
-		Name: p.Name,
-		Cron: p.Cron,
-		Jobs: jobs,
+		Name:           p.Name,
+		Cron:           p.Cron,
+		HealthcheckURL: p.HealthcheckURL,
+		Jobs:           jobs,
 	}, nil
 }
 

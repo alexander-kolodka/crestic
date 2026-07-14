@@ -37,7 +37,7 @@ The command:
   5. Exits (next invocation will start from saved time)
 
 Setup example (add to crontab):
-  */5 * * * * /usr/local/bin/crestic cron --config /path/to/crestic.yaml
+  */5 * * * * /usr/local/bin/crestic cron --config /path/to/crestic.yaml --healthcheck
 
 This runs the scheduler every 5 minutes, but jobs only execute when their
 cron expression matches.`,
@@ -72,6 +72,7 @@ cron expression matches.`,
 		}
 
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
+		healthcheck, _ := cmd.Flags().GetBool("healthcheck")
 
 		executor := shell.NewExecutor()
 		jobRunner := jobs.NewRunner(restic.NewService(executor), executor)
@@ -83,12 +84,15 @@ cron expression matches.`,
 		)
 
 		return h.Handle(cmd.Context(), &runpipelines.Command{
-			Pipelines: duePipelines,
-			DryRun:    dryRun,
+			Pipelines:   duePipelines,
+			DryRun:      dryRun,
+			Healthcheck: healthcheck,
 		})
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(cronCmd)
+	cronCmd.Flags().Bool("dry-run", false, "Dry run")
+	cronCmd.Flags().Bool("healthcheck", false, "Send healthcheck pings for pipelines with healthcheck_url")
 }

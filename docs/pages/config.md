@@ -14,11 +14,10 @@ You can also specify a custom file with the `-c path/to/some/config.yaml`
 ## Example configuration
 
 ```yaml | crestic.yaml
-healthcheck_url: https://hc-ping.com/your-uuid-here
-
 pipelines:
   - name: documents-nightly
     cron: "0 2 * * *"
+    healthcheck_url: https://hc-ping.com/your-uuid-here
     jobs:
       - type: backup
         name: local-backup
@@ -66,13 +65,9 @@ repositories:
 
 ## Configuration Structure
 
-### Global Settings
-
-- `healthcheck_url` - Healthcheck URL
-
 ### Pipelines
 
-Pipelines group related jobs and define the schedule. See [Pipelines](/pipelines) for detailed documentation.
+Pipelines group related jobs and define the schedule. Optional `healthcheck_url` enables [Healthchecks.io](/healthchecks) monitoring per pipeline. See [Pipelines](/pipelines) for detailed documentation.
 
 ### Jobs
 

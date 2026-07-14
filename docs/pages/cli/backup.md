@@ -1,7 +1,7 @@
 # 💾 Backup
 
 ```bash
-crestic backup [--all, -a] [--pipeline, -p <name>] [--job, -j <pipeline/job>] [--dry-run]
+crestic backup [--all, -a] [--pipeline, -p <name>] [--job, -j <pipeline/job>] [--dry-run] [--healthcheck]
 ```
 
 Performs backup and copy jobs from your configuration.
@@ -14,14 +14,16 @@ Performs backup and copy jobs from your configuration.
 
 The `backup` command performs a complete backup workflow (all steps are automatic):
 
-1. **Sends start ping** to healthcheck service (if configured)
+1. **Sends start ping** to healthcheck service (pipeline runs with `--healthcheck` and `healthcheck_url`)
 2. **Runs `before` hooks** (if configured)
 3. **Checks repository** - automatically initializes if not exists
 4. **Creates backup** - encrypted, deduplicated snapshot
 5. **Verifies integrity** - runs `restic check` on repository
 6. **Applies retention policy** - runs `restic forget` with `forget_options`
 7. **Runs `success` or `failure` hooks** based on outcome
-8. **Sends success/failure ping** to healthcheck service
+8. **Sends success/failure ping** to healthcheck service (same conditions as step 1)
+
+Healthcheck pings apply only to `--pipeline` / `--all` runs, not `--job`.
 
 ## Examples
 
@@ -31,6 +33,9 @@ crestic backup --all
 
 # Entire pipeline
 crestic backup --pipeline documents-nightly
+
+# With healthchecks
+crestic backup --pipeline documents-nightly --healthcheck
 
 # Specific job (qualified name: pipeline/job)
 crestic backup --job documents-nightly/local-backup

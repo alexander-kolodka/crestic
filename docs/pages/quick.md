@@ -20,12 +20,10 @@ go install github.com/alexander-kolodka/crestic@latest
 Create a `crestic.yaml` file:
 
 ```yaml
-# Healthcheck URL (optional)
-healthcheck_url: https://hc-ping.com/your-uuid-here
-
 pipelines:
   - name: documents-nightly
     cron: "0 2 * * *"  # Daily at 2 AM
+    healthcheck_url: https://hc-ping.com/your-uuid-here  # optional
     jobs:
       - type: backup
         name: local-backup
