@@ -3,14 +3,19 @@ package harness
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/alexander-kolodka/crestic/internal/cron"
 )
 
 const (
@@ -94,6 +99,54 @@ func (s *Sandbox) AddPipeline(name string) *PipelineBuilder {
 	}
 }
 
+// WriteCronState seeds the cron state file for a pipeline with the given last run time.
+func (s *Sandbox) WriteCronState(pipeline string, lastRun time.Time) {
+	s.t.Helper()
+	s.ensureConfig()
+
+	canonicalPath, err := cron.CanonicalConfigPath(s.configPath)
+	require.NoError(s.t, err)
+
+	cfgBasename := strings.TrimSuffix(filepath.Base(canonicalPath), filepath.Ext(canonicalPath))
+	stateFileName := cron.StateFileName(canonicalPath, cfgBasename)
+
+	state := cron.State{
+		Pipelines: map[string]cron.PipelineState{
+			pipeline: {LastRun: lastRun},
+		},
+	}
+
+	data, marshalErr := json.Marshal(state)
+	require.NoError(s.t, marshalErr)
+
+	statePath := filepath.Join(s.root, ".crestic", stateFileName)
+	err = os.WriteFile(statePath, data, filePerm)
+	require.NoError(s.t, err)
+}
+
+// Run executes crestic CLI with the sandbox config and returns captured stdout.
+func (s *Sandbox) Run(ctx context.Context, args ...string) (string, error) {
+	s.t.Helper()
+	s.ensureConfig()
+
+	fullArgs := append([]string{"--config", s.configPath, "--log-level", "error"}, args...)
+	command := exec.CommandContext(ctx, CresticBin(), fullArgs...)
+	command.Dir = s.root
+	command.Env = append(os.Environ(), "HOME="+s.root)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+
+	err := command.Run()
+	if err != nil {
+		return stdout.String(), fmt.Errorf("%w\nstderr:\n%s", err, stderr.String())
+	}
+
+	return stdout.String(), nil
+}
+
 func (s *Sandbox) ensureConfig() {
 	if s.configPath != "" {
 		return
@@ -107,26 +160,4 @@ func (s *Sandbox) ensureConfig() {
 
 	s.configPath = filepath.Join(s.root, "crestic.yaml")
 	require.NoError(s.t, os.WriteFile(s.configPath, buf.Bytes(), filePerm))
-}
-
-// Run executes crestic CLI with the sandbox config and returns captured stdout.
-func (s *Sandbox) Run(ctx context.Context, args ...string) (string, error) {
-	s.t.Helper()
-	s.ensureConfig()
-
-	fullArgs := append([]string{"--config", s.configPath, "--log-level", "error"}, args...)
-	command := exec.CommandContext(ctx, CresticBin(), fullArgs...)
-	command.Dir = s.root
-
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	command.Stdout = &stdout
-	command.Stderr = &stderr
-
-	err := command.Run()
-	if err != nil {
-		return stdout.String(), fmt.Errorf("%w\nstderr:\n%s", err, stderr.String())
-	}
-
-	return stdout.String(), nil
 }

@@ -5,7 +5,6 @@ type Config struct {
 	Repositories   map[string]Repository `yaml:"repositories"`
 	Pipelines      Pipelines             `yaml:"pipelines"`
 	HealthcheckURL string                `yaml:"healthcheck_url"`
-	StateDir       string                `yaml:"state_dir"`
 }
 
 type Pipeline struct {

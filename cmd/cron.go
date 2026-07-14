@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"crypto/md5" //nolint:gosec // G501: md5 used only for lock-file name fingerprint, not security
-	"encoding/hex"
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -51,12 +48,21 @@ cron expression matches.`,
 			return err
 		}
 
-		lockFile, err := getLockFile(cfgPath)
+		resolvedPath, err := findConfigFile(cfgPath)
 		if err != nil {
 			return err
 		}
 
-		duePipelines, err := cron.FilterPipelinesByCron(cmd.Context(), cfg.Pipelines)
+		canonicalPath, err := cron.CanonicalConfigPath(resolvedPath)
+		if err != nil {
+			return err
+		}
+
+		cfgName := strings.TrimSuffix(filepath.Base(canonicalPath), filepath.Ext(canonicalPath))
+		lockFile := cron.LockFileName(canonicalPath, cfgName)
+		stateFile := cron.StateFileName(canonicalPath, cfgName)
+
+		duePipelines, err := cron.FilterPipelinesByCron(cmd.Context(), cfg.Pipelines, stateFile)
 		if err != nil {
 			return err
 		}
@@ -91,29 +97,4 @@ cron expression matches.`,
 func init() {
 	rootCmd.AddCommand(cronCmd)
 	cronCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
-}
-
-func getLockFile(cfgPath string) (string, error) {
-	cfgName, err := getCfgFileName(cfgPath)
-	if err != nil {
-		return "", err
-	}
-
-	//nolint:gosec // G401: md5 is used only for lock-file name fingerprint, not security
-	sum := md5.Sum([]byte(cfgPath))
-	hash := hex.EncodeToString(sum[:])
-
-	lockFileName := fmt.Sprintf("crestic-cron-%s-%s.lock", cfgName, hash)
-
-	return lockFileName, nil
-}
-
-func getCfgFileName(cfgPath string) (string, error) {
-	path, err := findConfigFile(cfgPath)
-	if err != nil {
-		return "", err
-	}
-
-	fileName := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-	return fileName, nil
 }

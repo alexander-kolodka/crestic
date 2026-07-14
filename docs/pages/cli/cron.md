@@ -18,11 +18,13 @@ When launched, it:
 - Remembers last run time per pipeline (won't miss scheduled runs)
 
 ## Locking behavior
-- Only one instance of `crestic cron` can run per configuration file name
-- A lock file is created in `~/.crestic/` and uses only the filename of the config, not the full path or extension
-  - Example: `/etc/backup/crestic.yaml` and `/etc/backup/crestic.yml` will share the same lock
-  - `my.yml` and `config.yml` will run in parallel, as their filenames differ
-- This prevents two processes from running the same pipelines simultaneously, while still allowing multiple independent configs to run at the same time
+- Only one instance of `crestic cron` can run per configuration file
+- A lock file is created in `~/.crestic/` with the config basename and an MD5 hash of the config's canonical absolute path
+  - Format: `crestic-cron-{basename}-{hash}.lock`
+  - The hash is computed from the resolved absolute path after symlink resolution, not from the raw `--config` flag value
+  - Example: `~/crestic.yaml`, `./crestic.yaml`, and `/home/user/crestic.yaml` share the same lock if they point to the same file
+  - Example: `/etc/prod/crestic.yaml` and `/etc/staging/crestic.yaml` use different lock files even if both basenames are `crestic`
+- This prevents two processes from running the same config simultaneously, while still allowing multiple independent configs to run at the same time
 
 ## Examples
 
@@ -57,7 +59,13 @@ pipelines:
 
 ## State File
 
-Crestic stores per-pipeline last run times in `~/.crestic/crestic-cron-state.json`:
+Crestic stores per-pipeline last run times in `~/.crestic/` using one state file per configuration:
+
+- Format: `crestic-cron-state-{basename}-{hash}.json`
+- `{basename}` is the config filename without extension
+- `{hash}` is an MD5 hash of the config's canonical absolute path (same scheme as the lock file)
+
+Example path: `~/.crestic/crestic-cron-state-crestic-a1b2c3....json`
 
 ```json
 {
@@ -67,6 +75,15 @@ Crestic stores per-pipeline last run times in `~/.crestic/crestic-cron-state.jso
   }
 }
 ```
+
+Pipelines with the same name in different config files keep separate state because each config has its own state file.
+
+### First run
+
+When a pipeline has no saved state yet:
+
+- Crestic runs it only if the most recent scheduled slot was within the last 5 minutes
+- Otherwise it records the current time and waits for the next scheduled slot
 
 ## Notes
 
