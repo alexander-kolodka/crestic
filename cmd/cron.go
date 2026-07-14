@@ -73,14 +73,8 @@ cron expression matches.`,
 
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
-		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
-		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
-		if err != nil {
-			return err
-		}
-
 		executor := shell.NewExecutor()
-		jobsHandler := backup.NewHandler(restic.NewService(executor), executor, hc)
+		jobsHandler := backup.NewHandler(restic.NewService(executor), executor)
 		h := handler.Chain(
 			runpipelines.NewHandler(jobsHandler),
 			handler.WithPanicRecovery[*runpipelines.Command](),
@@ -96,5 +90,4 @@ cron expression matches.`,
 
 func init() {
 	rootCmd.AddCommand(cronCmd)
-	cronCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
 }

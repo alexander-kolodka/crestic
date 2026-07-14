@@ -8,11 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/samber/lo"
-
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"github.com/alexander-kolodka/crestic/internal/healthchecks"
 	"github.com/alexander-kolodka/crestic/internal/logger"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
@@ -26,15 +22,13 @@ type Command struct {
 type Handler struct {
 	restic *restic.Service
 	runner *shell.Executor
-	hc     HealthChecks
 }
 
 // NewHandler creates a backup command Handler.
-func NewHandler(restic *restic.Service, runner *shell.Executor, hc HealthChecks) *Handler {
+func NewHandler(restic *restic.Service, runner *shell.Executor) *Handler {
 	return &Handler{
 		restic: restic,
 		runner: runner,
-		hc:     hc,
 	}
 }
 
@@ -49,9 +43,6 @@ func (h *Handler) Handle(ctx context.Context, cmd *Command) error {
 		newHookMw(h),
 	)
 
-	rid := uuid.NewString()
-	_ = h.hc.Start(ctx, rid, healthchecks.NewJobsList(toJobList(cmd.Jobs)))
-
 	jobResults := entity.NewJobResults()
 	for _, job := range cmd.Jobs {
 		start := time.Now()
@@ -60,11 +51,9 @@ func (h *Handler) Handle(ctx context.Context, cmd *Command) error {
 	}
 
 	if jobResults.HasErrors() {
-		_ = h.hc.Fail(ctx, rid, jobResults)
 		return errors.New(jobResults.ErrorMsg())
 	}
 
-	_ = h.hc.Success(ctx, rid, jobResults)
 	return nil
 }
 
@@ -185,10 +174,4 @@ func (h *Handler) executeHooks(ctx context.Context, hooks []string) error {
 		}
 	}
 	return nil
-}
-
-func toJobList(jobs []entity.Job) []string {
-	return lo.Map(jobs, func(j entity.Job, _ int) string {
-		return j.GetFullName()
-	})
 }

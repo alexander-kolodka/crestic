@@ -63,15 +63,9 @@ Examples:
 
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
-		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
-		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
-		if err != nil {
-			return err
-		}
-
 		executor := shell.NewExecutor()
 		jobsHandler := handler.Chain(
-			backup.NewHandler(restic.NewService(executor), executor, hc),
+			backup.NewHandler(restic.NewService(executor), executor),
 			handler.WithPanicRecovery[*backup.Command](),
 		)
 
@@ -121,7 +115,6 @@ func init() {
 		StringSliceP("job", "j", nil, "Run specific jobs by qualified name pipeline/job (comma-separated)")
 	backupCmd.Flags().StringSliceP("pipeline", "p", nil, "Run all jobs in specific pipelines by name (comma-separated)")
 	backupCmd.Flags().Bool("dry-run", false, "Dry run")
-	backupCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
 
 	_ = backupCmd.RegisterFlagCompletionFunc("job", jobAutocompletion)
 	_ = backupCmd.RegisterFlagCompletionFunc("pipeline", pipelineAutocompletion)
