@@ -3,7 +3,6 @@ package healthchecks
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,17 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/logger"
 )
-
-type JobsList struct {
-	Jobs []string `json:"jobs"`
-}
-
-func NewJobsList(jobs []string) *JobsList {
-	return &JobsList{Jobs: jobs}
-}
 
 type Client struct {
 	http    *http.Client
@@ -44,31 +34,24 @@ func NewClient(baseURL string) (*Client, error) {
 }
 
 // Start signals the beginning of task execution.
-// Enables tracking of "hanging" tasks that started but never completed.
-// baseURL should be the full healthcheck URL (e.g., https://hc-ping.com/{uuid} or https://hc-ping.com/{uuid}/{slug})
 // rid is the unique run ID for grouping signals.
-func (c *Client) Start(ctx context.Context, rid string, j *JobsList) error {
-	return c.post(ctx, "start", rid, j)
+func (c *Client) Start(ctx context.Context, rid, body string) error {
+	return c.post(ctx, "start", rid, body)
 }
 
 // Success reports successful task completion.
-// Healthchecks.io automatically calculates duration between /start and this ping.
-// baseURL should be the full healthcheck URL (e.g., https://hc-ping.com/{uuid} or https://hc-ping.com/{uuid}/{slug})
 // rid must match the one passed to Start.
-func (c *Client) Success(ctx context.Context, rid string, r *entity.JobResults) error {
-	return c.post(ctx, "", rid, r)
+func (c *Client) Success(ctx context.Context, rid, body string) error {
+	return c.post(ctx, "", rid, body)
 }
 
-// Fail reports task failure with error message.
-// Healthchecks.io automatically calculates duration and stores the error message.
-// errMsg is sent in request body and displayed in Healthchecks.io interface.
-// baseURL should be the full healthcheck URL (e.g., https://hc-ping.com/{uuid} or https://hc-ping.com/{uuid}/{slug})
+// Fail reports task failure with an error message in the request body.
 // rid must match the one passed to Start.
-func (c *Client) Fail(ctx context.Context, rid string, r *entity.JobResults) error {
-	return c.post(ctx, "fail", rid, r)
+func (c *Client) Fail(ctx context.Context, rid, body string) error {
+	return c.post(ctx, "fail", rid, body)
 }
 
-func (c *Client) post(ctx context.Context, endpoint, rid string, p any) error {
+func (c *Client) post(ctx context.Context, endpoint, rid, body string) error {
 	u, err := buildURL(c.baseURL, endpoint, rid)
 	if err != nil {
 		log := logger.FromContext(ctx)
@@ -76,15 +59,10 @@ func (c *Client) post(ctx context.Context, endpoint, rid string, p any) error {
 		return fmt.Errorf("invalid healthcheck URL: %w", err)
 	}
 
-	body, err := json.Marshal(p)
-	if err != nil {
-		log := logger.FromContext(ctx)
-		log.Error().Err(err).Msg("failed to marshal payload")
-		return fmt.Errorf("marshal payload: %w", err)
-	}
+	payload := []byte(body)
 
 	err = withRetry(ctx, func() error {
-		return c.doPost(ctx, u, body)
+		return c.doPost(ctx, u, payload)
 	})
 	if err != nil {
 		log := logger.FromContext(ctx)
@@ -120,14 +98,14 @@ func (c *Client) doPost(ctx context.Context, url string, body []byte) error {
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "text/plain")
 
 	resp, err := c.http.Do(req)
 	if err != nil {
 		log := logger.FromContext(ctx)
 		log.Warn().
 			Err(err).
-			RawJSON("body", body).
+			Str("body", string(body)).
 			Str("url", url).
 			Msg("Failed to send healthcheck request")
 		return &retryableError{err: err}
@@ -145,7 +123,7 @@ func (c *Client) doPost(ctx context.Context, url string, body []byte) error {
 	log.Warn().
 		Int("status_code", resp.StatusCode).
 		Str("url", url).
-		RawJSON("body", body).
+		Str("body", string(body)).
 		Str("response", string(respBody)).
 		Msg("Healthcheck request returned non-OK status")
 

@@ -1,7 +1,7 @@
 # 💾 Backup
 
 ```bash
-crestic backup [--all, -a] [--pipeline, -p <name>] [--job, -j <pipeline/job>] [--dry-run]
+crestic backup [--all, -a] [--pipeline, -p <name>] [--job, -j <pipeline/job>] [--dry-run] [--healthcheck]
 ```
 
 Performs backup and copy jobs from your configuration.
@@ -14,14 +14,16 @@ Performs backup and copy jobs from your configuration.
 
 The `backup` command performs a complete backup workflow (all steps are automatic):
 
-1. **Sends start ping** to healthcheck service (if configured)
+1. **Sends start ping** to healthcheck service (pipeline runs with `--healthcheck` and `healthcheck_url`)
 2. **Runs `before` hooks** (if configured)
 3. **Checks repository** - automatically initializes if not exists
 4. **Creates backup** - encrypted, deduplicated snapshot
 5. **Verifies integrity** - runs `restic check` on repository
 6. **Applies retention policy** - runs `restic forget` with `forget_options`
 7. **Runs `success` or `failure` hooks** based on outcome
-8. **Sends success/failure ping** to healthcheck service
+8. **Sends success/failure ping** to healthcheck service (same conditions as step 1)
+
+Healthcheck pings apply only to `--pipeline` / `--all` runs, not `--job`.
 
 ## Examples
 
@@ -31,6 +33,9 @@ crestic backup --all
 
 # Entire pipeline
 crestic backup --pipeline documents-nightly
+
+# With healthchecks
+crestic backup --pipeline documents-nightly --healthcheck
 
 # Specific job (qualified name: pipeline/job)
 crestic backup --job documents-nightly/local-backup
@@ -61,13 +66,10 @@ For more options, see [Removing backup snapshots](https://restic.readthedocs.io/
 
 ## Error Handling
 
-When running multiple jobs, each job executes **independently**. If one job fails:
+Jobs in a list run **sequentially** (fail-fast). If one job fails:
 
-- The error is logged
-- Execution continues with the next job
-- Other jobs will still run
-- At the end, all errors are collected and returned as a combined error message
+- The error is logged and returned immediately
+- Remaining jobs in the same list are not executed
 
-This ensures that a failure in one job doesn't prevent other jobs from completing.
-Each job's success or failure is tracked separately,
-and healthcheck notifications are sent for each job individually.
+When running multiple pipelines (`--all` or several `--pipeline` values), each pipeline
+still runs even if a previous pipeline failed; pipeline-level errors are combined at the end.

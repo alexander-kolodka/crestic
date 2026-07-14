@@ -2,15 +2,15 @@ package dto
 
 // Config is the YAML configuration structure.
 type Config struct {
-	Repositories   map[string]Repository `yaml:"repositories"`
-	Pipelines      Pipelines             `yaml:"pipelines"`
-	HealthcheckURL string                `yaml:"healthcheck_url"`
+	Repositories map[string]Repository `yaml:"repositories"`
+	Pipelines    Pipelines             `yaml:"pipelines"`
 }
 
 type Pipeline struct {
-	Name string `yaml:"name"`
-	Cron string `yaml:"cron"`
-	Jobs Jobs   `yaml:"jobs"`
+	Name           string `yaml:"name"`
+	Cron           string `yaml:"cron"`
+	HealthcheckURL string `yaml:"healthcheck_url"`
+	Jobs           Jobs   `yaml:"jobs"`
 }
 
 type Options map[string]any

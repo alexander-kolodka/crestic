@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/cron"
+	"github.com/alexander-kolodka/crestic/internal/jobs"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
 )
@@ -37,7 +37,7 @@ The command:
   5. Exits (next invocation will start from saved time)
 
 Setup example (add to crontab):
-  */5 * * * * /usr/local/bin/crestic cron --config /path/to/crestic.yaml
+  */5 * * * * /usr/local/bin/crestic cron --config /path/to/crestic.yaml --healthcheck
 
 This runs the scheduler every 5 minutes, but jobs only execute when their
 cron expression matches.`,
@@ -72,29 +72,27 @@ cron expression matches.`,
 		}
 
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-
-		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
-		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
-		if err != nil {
-			return err
-		}
+		healthcheck, _ := cmd.Flags().GetBool("healthcheck")
 
 		executor := shell.NewExecutor()
-		jobsHandler := backup.NewHandler(restic.NewService(executor), executor, hc)
+		jobRunner := jobs.NewRunner(restic.NewService(executor), executor)
+
 		h := handler.Chain(
-			runpipelines.NewHandler(jobsHandler),
+			runpipelines.NewHandler(jobRunner),
 			handler.WithPanicRecovery[*runpipelines.Command](),
 			handler.WithLock[*runpipelines.Command](lockFile),
 		)
 
 		return h.Handle(cmd.Context(), &runpipelines.Command{
-			Pipelines: duePipelines,
-			DryRun:    dryRun,
+			Pipelines:   duePipelines,
+			DryRun:      dryRun,
+			Healthcheck: healthcheck,
 		})
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(cronCmd)
-	cronCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
+	cronCmd.Flags().Bool("dry-run", false, "Dry run")
+	cronCmd.Flags().Bool("healthcheck", false, "Send healthcheck pings for pipelines with healthcheck_url")
 }

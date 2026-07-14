@@ -8,18 +8,18 @@ import (
 
 // Config represents the top-level configuration for crestic.
 type Config struct {
-	Pipelines      Pipelines
-	Repositories   map[string]*Repository // Map of repository names to repository configs
-	HealthcheckURL string                 // Global healthcheck URL for monitoring
+	Pipelines    Pipelines
+	Repositories map[string]*Repository // Map of repository names to repository configs
 }
 
 type Pipelines []Pipeline
 
 // Pipeline groups related jobs that run together on a schedule.
 type Pipeline struct {
-	Name string
-	Cron string
-	Jobs Jobs
+	Name           string
+	Cron           string
+	HealthcheckURL string // Optional Healthchecks.io ping URL for this pipeline
+	Jobs           Jobs
 }
 
 // Jobs is a list of Job interfaces representing different types of backup operations.

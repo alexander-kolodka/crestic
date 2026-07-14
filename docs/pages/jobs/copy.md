@@ -166,24 +166,21 @@ crestic backup --all
 
 The copy operation:
 
-1. **Sends start ping** to healthcheck service (if configured)
-2. **Runs `before` hooks** (if configured)
-3. **Copies snapshots** from source to target repository
-4. **Runs `success` or `failure` hooks** based on outcome
-5. **Sends success/failure ping** to healthcheck service
+1. **Runs `before` hooks** (if configured)
+2. **Copies snapshots** from source to target repository
+3. **Runs `success` or `failure` hooks** based on outcome
+
+Pipeline-level healthcheck pings (when enabled) wrap the whole pipeline, not individual copy jobs. See [Healthchecks](/healthchecks).
 
 ## Error Handling
 
-When running multiple jobs, each job executes **independently**. If one job fails:
+Jobs in a list run **sequentially** (fail-fast). If one job fails:
 
-- The error is logged
-- Execution continues with the next job
-- Other jobs will still run
-- At the end, all errors are collected and returned as a combined error message
+- The error is logged and returned immediately
+- Remaining jobs in the same list are not executed
 
-This ensures that a failure in one job doesn't prevent other jobs from completing.
-Each job's success or failure is tracked separately,
-and healthcheck notifications are sent for each job individually.
+When running multiple pipelines, each pipeline still runs even if a previous pipeline
+failed; pipeline-level errors are combined at the end.
 
 ## See Also
 

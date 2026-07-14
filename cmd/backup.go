@@ -11,6 +11,7 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/entity"
+	"github.com/alexander-kolodka/crestic/internal/jobs"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
 )
@@ -34,8 +35,8 @@ Note: The forget step automatically runs after each backup if forget_options
 are configured in the repository. If --prune flag is set in forget_options,
 old data is actually removed from the repository to free disk space.
 
-A failure in one backup job doesn't prevent other backups from completing.
-At the end, all errors are collected and returned as a combined error.
+Jobs run sequentially. If a job fails, the remaining jobs in the list are not
+executed and the error is returned immediately.
 
 Examples:
   # Run all jobs from all pipelines
@@ -62,42 +63,40 @@ Examples:
 		}
 
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-
-		sendHealthcheck, _ := cmd.Flags().GetBool("healthcheck")
-		hc, err := newHealthChecks(cfg.HealthcheckURL, !sendHealthcheck)
-		if err != nil {
-			return err
-		}
+		healthcheck, _ := cmd.Flags().GetBool("healthcheck")
 
 		executor := shell.NewExecutor()
+		jobRunner := jobs.NewRunner(restic.NewService(executor), executor)
+
 		jobsHandler := handler.Chain(
-			backup.NewHandler(restic.NewService(executor), executor, hc),
+			backup.NewHandler(jobRunner),
 			handler.WithPanicRecovery[*backup.Command](),
 		)
 
 		fullJobNames, _ := cmd.Flags().GetStringSlice("job")
-		jobs, err := extractJobs(cfg, fullJobNames)
+		extractedJobs, err := extractJobs(cfg, fullJobNames)
 		if err != nil {
 			return err
 		}
 
-		if len(jobs) > 0 {
+		if len(extractedJobs) > 0 {
 			return jobsHandler.Handle(cmd.Context(), &backup.Command{
-				Jobs:   jobs,
+				Jobs:   extractedJobs,
 				DryRun: dryRun,
 			})
 		}
 
 		runPipelinesHandler := handler.Chain(
-			runpipelines.NewHandler(jobsHandler),
+			runpipelines.NewHandler(jobRunner),
 			handler.WithPanicRecovery[*runpipelines.Command](),
 		)
 
 		all, _ := cmd.Flags().GetBool("all")
 		if all {
 			return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
-				Pipelines: cfg.Pipelines,
-				DryRun:    dryRun,
+				Pipelines:   cfg.Pipelines,
+				DryRun:      dryRun,
+				Healthcheck: healthcheck,
 			})
 		}
 
@@ -108,8 +107,9 @@ Examples:
 		}
 
 		return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
-			Pipelines: pipelines,
-			DryRun:    dryRun,
+			Pipelines:   pipelines,
+			DryRun:      dryRun,
+			Healthcheck: healthcheck,
 		})
 	},
 }
@@ -121,7 +121,7 @@ func init() {
 		StringSliceP("job", "j", nil, "Run specific jobs by qualified name pipeline/job (comma-separated)")
 	backupCmd.Flags().StringSliceP("pipeline", "p", nil, "Run all jobs in specific pipelines by name (comma-separated)")
 	backupCmd.Flags().Bool("dry-run", false, "Dry run")
-	backupCmd.Flags().Bool("healthcheck", false, "Send healthcheck notifications")
+	backupCmd.Flags().Bool("healthcheck", false, "Send healthcheck pings for pipelines with healthcheck_url")
 
 	_ = backupCmd.RegisterFlagCompletionFunc("job", jobAutocompletion)
 	_ = backupCmd.RegisterFlagCompletionFunc("pipeline", pipelineAutocompletion)

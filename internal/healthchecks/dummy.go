@@ -2,21 +2,19 @@ package healthchecks
 
 import (
 	"context"
-
-	"github.com/alexander-kolodka/crestic/internal/entity"
 )
 
-// Dummy is a no-op implementation.
+// Dummy is a no-op Service used when healthchecks are disabled.
 type Dummy struct{}
 
-func (s *Dummy) Start(_ context.Context, _ string, _ *JobsList) error {
+func (s *Dummy) Start(_ context.Context, _, _ string) error {
 	return nil
 }
 
-func (s *Dummy) Success(_ context.Context, _ string, _ *entity.JobResults) error {
+func (s *Dummy) Success(_ context.Context, _, _ string) error {
 	return nil
 }
 
-func (s *Dummy) Fail(_ context.Context, _ string, _ *entity.JobResults) error {
+func (s *Dummy) Fail(_ context.Context, _, _ string) error {
 	return nil
 }
