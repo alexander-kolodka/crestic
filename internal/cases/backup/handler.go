@@ -1,17 +1,10 @@
 package backup
 
-import "C"
-
 import (
 	"context"
-	"errors"
-	"fmt"
-	"time"
 
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/restic"
-	"github.com/alexander-kolodka/crestic/internal/shell"
+	"github.com/alexander-kolodka/crestic/internal/jobs"
 )
 
 type Command struct {
@@ -20,158 +13,20 @@ type Command struct {
 }
 
 type Handler struct {
-	restic *restic.Service
-	runner *shell.Executor
+	jobs *jobs.Runner
 }
 
 // NewHandler creates a backup command Handler.
-func NewHandler(restic *restic.Service, runner *shell.Executor) *Handler {
+func NewHandler(jobRunner *jobs.Runner) *Handler {
 	return &Handler{
-		restic: restic,
-		runner: runner,
+		jobs: jobRunner,
 	}
 }
 
 func (h *Handler) Handle(ctx context.Context, cmd *Command) error {
 	if cmd.DryRun {
-		ctx = restic.WithDryRun(ctx)
-		ctx = logger.FromContext(ctx).With().Bool("dry-run", cmd.DryRun).Logger().WithContext(ctx)
+		ctx = jobs.WithDryRun(ctx)
 	}
 
-	fn := chain(
-		h.doJob,
-		newHookMw(h),
-	)
-
-	jobResults := entity.NewJobResults()
-	for _, job := range cmd.Jobs {
-		start := time.Now()
-		err := fn(ctx, job)
-		jobResults.Add(job.GetFullName(), time.Since(start), err)
-	}
-
-	if jobResults.HasErrors() {
-		return errors.New(jobResults.ErrorMsg())
-	}
-
-	return nil
-}
-
-func (h *Handler) doJob(ctx context.Context, job entity.Job) error {
-	switch j := job.(type) {
-	case entity.BackupJob:
-		jobCtx := logger.WithBackupJobFields(ctx, j)
-		log := logger.FromContext(jobCtx)
-
-		err := h.backup(jobCtx, j)
-		if err == nil {
-			return nil
-		}
-
-		log.Error().Msg("Backup job failed")
-		return err
-	case entity.CopyJob:
-		jobCtx := logger.WithCopyJobFields(ctx, j)
-		log := logger.FromContext(jobCtx)
-
-		err := h.copy(jobCtx, j)
-		if err == nil {
-			return nil
-		}
-
-		log.Error().Msg("Copy job failed")
-		return err
-	default:
-	}
-
-	return nil
-}
-
-func (h *Handler) backup(ctx context.Context, b entity.BackupJob) error {
-	ctx = logger.WithBackupJobFields(ctx, b)
-	log := logger.FromContext(ctx)
-	log.Info().Msg("Processing backup")
-
-	err := h.initRepo(ctx, b.To)
-	if err != nil {
-		return err
-	}
-
-	err = h.restic.Backup(ctx, b)
-	if err != nil {
-		return err
-	}
-
-	err = h.restic.Check(ctx, b.To)
-	if err != nil {
-		return err
-	}
-
-	err = h.restic.Forget(ctx, b.To)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (h *Handler) copy(ctx context.Context, c entity.CopyJob) error {
-	log := logger.FromContext(ctx)
-	log.Info().Msg("Processing copy")
-
-	err := h.initRepo(ctx, c.From)
-	if err != nil {
-		return err
-	}
-
-	err = h.initRepo(ctx, c.To)
-	if err != nil {
-		return err
-	}
-
-	err = h.restic.Copy(ctx, c)
-	if err != nil {
-		return err
-	}
-
-	err = h.restic.Check(ctx, c.To)
-	if err != nil {
-		return err
-	}
-
-	err = h.restic.Forget(ctx, c.To)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (h *Handler) initRepo(ctx context.Context, repo *entity.Repository) error {
-	isRepoInitialized, err := h.restic.IsRepoInitialized(ctx, repo)
-	if err != nil {
-		return err
-	}
-
-	if isRepoInitialized {
-		return nil
-	}
-
-	return h.restic.Init(ctx, repo)
-}
-
-func (h *Handler) executeHooks(ctx context.Context, hooks []string) error {
-	ctx = logger.WithSource(ctx, "hooks")
-	for _, hook := range hooks {
-		result := h.runner.Run(ctx, "sh", "-c", hook)
-		if result.Error != nil {
-			return fmt.Errorf(
-				`hook failed "%s" [exit code %d]: %w`,
-				hook,
-				result.ExitCode,
-				result.Error,
-			)
-		}
-	}
-	return nil
+	return h.jobs.Run(ctx, cmd.Jobs)
 }

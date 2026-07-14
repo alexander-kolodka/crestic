@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/cron"
+	"github.com/alexander-kolodka/crestic/internal/jobs"
 	"github.com/alexander-kolodka/crestic/internal/restic"
 	"github.com/alexander-kolodka/crestic/internal/shell"
 )
@@ -74,9 +74,10 @@ cron expression matches.`,
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 		executor := shell.NewExecutor()
-		jobsHandler := backup.NewHandler(restic.NewService(executor), executor)
+		jobRunner := jobs.NewRunner(restic.NewService(executor), executor)
+
 		h := handler.Chain(
-			runpipelines.NewHandler(jobsHandler),
+			runpipelines.NewHandler(jobRunner),
 			handler.WithPanicRecovery[*runpipelines.Command](),
 			handler.WithLock[*runpipelines.Command](lockFile),
 		)

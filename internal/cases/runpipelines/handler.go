@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/alexander-kolodka/crestic/internal/cases/backup"
-	"github.com/alexander-kolodka/crestic/internal/cases/handler"
 	"github.com/alexander-kolodka/crestic/internal/entity"
+	"github.com/alexander-kolodka/crestic/internal/jobs"
 	"github.com/alexander-kolodka/crestic/internal/logger"
 )
 
@@ -16,26 +15,27 @@ type Command struct {
 }
 
 type Handler struct {
-	runJobs handler.Handler[*backup.Command]
+	jobs *jobs.Runner
 }
 
-func NewHandler(runJobs handler.Handler[*backup.Command]) *Handler {
+func NewHandler(jobRunner *jobs.Runner) *Handler {
 	return &Handler{
-		runJobs: runJobs,
+		jobs: jobRunner,
 	}
 }
 
 func (h *Handler) Handle(ctx context.Context, cmd *Command) error {
 	var errs []error
 
+	if cmd.DryRun {
+		ctx = jobs.WithDryRun(ctx)
+	}
+
 	for _, pipeline := range cmd.Pipelines {
 		log := logger.FromContext(ctx)
 		log.Info().Str("pipeline", pipeline.Name).Msg("Processing pipeline")
 
-		err := h.runJobs.Handle(ctx, &backup.Command{
-			Jobs:   pipeline.Jobs,
-			DryRun: cmd.DryRun,
-		})
+		err := h.jobs.Run(ctx, pipeline.Jobs)
 		if err != nil {
 			errs = append(errs, err)
 		}

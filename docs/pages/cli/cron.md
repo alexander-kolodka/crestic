@@ -89,4 +89,4 @@ When a pipeline has no saved state yet:
 
 - Crestic stores per-pipeline execution timestamps to ensure pipelines run even if cron wasn't triggered exactly on time (e.g. machine was off)
 - If no pipeline is due — it exits without doing anything
-- If a job fails, Crestic proceeds to the next job in the pipeline (jobs are independent)
+- If a job fails, remaining jobs in that pipeline are not executed (fail-fast); other due pipelines still run
