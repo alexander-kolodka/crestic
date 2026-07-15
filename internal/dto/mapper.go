@@ -94,6 +94,7 @@ func toPipeline(p Pipeline, repos *repoLookup) (entity.Pipeline, error) {
 		Name:           p.Name,
 		Cron:           p.Cron,
 		HealthcheckURL: p.HealthcheckURL,
+		Hooks:          toHooks(p.Hooks),
 		Jobs:           jobs,
 	}, nil
 }

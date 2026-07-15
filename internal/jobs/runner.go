@@ -2,25 +2,25 @@ package jobs
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/alexander-kolodka/crestic/internal/entity"
+	"github.com/alexander-kolodka/crestic/internal/hooks"
 	"github.com/alexander-kolodka/crestic/internal/logger"
+	"github.com/alexander-kolodka/crestic/internal/mw"
 	"github.com/alexander-kolodka/crestic/internal/restic"
-	"github.com/alexander-kolodka/crestic/internal/shell"
 )
 
 // Runner executes jobs sequentially (fail-fast).
 type Runner struct {
 	restic *restic.Service
-	shell  *shell.Executor
+	hooks  *hooks.Runner
 }
 
 // NewRunner creates a job Runner.
-func NewRunner(resticService *restic.Service, shellExecutor *shell.Executor) *Runner {
+func NewRunner(resticService *restic.Service, hooksRunner *hooks.Runner) *Runner {
 	return &Runner{
 		restic: resticService,
-		shell:  shellExecutor,
+		hooks:  hooksRunner,
 	}
 }
 
@@ -31,7 +31,7 @@ func (r *Runner) Run(ctx context.Context, jobs []entity.Job) error {
 		ctx = logger.FromContext(ctx).With().Bool("dry-run", true).Logger().WithContext(ctx)
 	}
 
-	fn := chain(
+	fn := mw.Chain(
 		r.doJob,
 		newHookMw(r),
 	)
@@ -149,18 +149,6 @@ func (r *Runner) initRepo(ctx context.Context, repo *entity.Repository) error {
 	return r.restic.Init(ctx, repo)
 }
 
-func (r *Runner) executeHooks(ctx context.Context, hooks []string) error {
-	ctx = logger.WithSource(ctx, "hooks")
-	for _, hook := range hooks {
-		result := r.shell.Run(ctx, "sh", "-c", hook)
-		if result.Error != nil {
-			return fmt.Errorf(
-				`hook failed "%s" [exit code %d]: %w`,
-				hook,
-				result.ExitCode,
-				result.Error,
-			)
-		}
-	}
-	return nil
+func (r *Runner) executeHooks(ctx context.Context, cmds []string) error {
+	return r.hooks.Execute(ctx, cmds)
 }

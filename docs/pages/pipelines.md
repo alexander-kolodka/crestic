@@ -19,6 +19,10 @@ pipelines:
   - name: string          # Required: Unique pipeline name
     cron: string          # Optional: Cron expression for scheduling
     healthcheck_url: string  # Optional: Healthchecks.io ping URL
+    hooks:                # Optional: Lifecycle hooks for the pipeline
+      before: []
+      success: []
+      failure: []
     jobs:                 # Required: List of jobs to run
       - type: backup
         name: string
@@ -75,6 +79,21 @@ Optional [Healthchecks.io](/healthchecks) ping URL for this pipeline. Match the 
 healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef
 ```
 
+### `hooks`
+
+Optional lifecycle hooks that wrap the entire pipeline run (`before`, `success`, `failure`).
+See [Hooks](/hooks) for details and environment variables (`CRESTIC_PIPELINE_NAME`, `CRESTIC_ERROR`).
+
+```yaml
+hooks:
+  before:
+    - echo "Starting pipeline..."
+  success:
+    - echo "Pipeline done"
+  failure:
+    - echo "Pipeline failed: $CRESTIC_ERROR" >&2
+```
+
 ## Complete Example
 
 ```yaml
@@ -82,6 +101,11 @@ pipelines:
   - name: documents-nightly
     cron: "0 2 * * *"
     healthcheck_url: https://hc-ping.com/01234567-89ab-cdef-0123-456789abcdef
+    hooks:
+      before:
+        - echo "Starting pipeline..."
+      failure:
+        - echo "Pipeline failed: $CRESTIC_ERROR" >&2
     jobs:
       - type: backup
         name: local-backup

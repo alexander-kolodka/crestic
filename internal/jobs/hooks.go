@@ -5,44 +5,43 @@ import (
 	"fmt"
 
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"github.com/alexander-kolodka/crestic/internal/shell"
+	"github.com/alexander-kolodka/crestic/internal/hooks"
+	"github.com/alexander-kolodka/crestic/internal/logger"
+	"github.com/alexander-kolodka/crestic/internal/mw"
 )
 
 type hookExecutor interface {
 	executeHooks(ctx context.Context, hooks []string) error
 }
 
-func newHookMw(h hookExecutor) mw {
-	return func(fn do) do {
+func newHookMw(h hookExecutor) mw.Middleware[entity.Job] {
+	return func(fn mw.Func[entity.Job]) mw.Func[entity.Job] {
 		return func(ctx context.Context, j entity.Job) error {
-			hooks := j.GetHooks()
+			jobHooks := j.GetHooks()
 			jName := j.GetFullName()
 
-			err := h.executeHooks(withEnv(ctx, jName, nil), hooks.Before)
+			err := h.executeHooks(hooks.WithJobEnv(ctx, jName, nil), jobHooks.Before)
 			if err != nil {
-				_ = h.executeHooks(withEnv(ctx, jName, err), hooks.Failure)
+				logFailureHookErr(ctx, h.executeHooks(hooks.WithJobEnv(ctx, jName, err), jobHooks.Failure))
 				return fmt.Errorf("before hooks failed: %w", err)
 			}
 
 			err = fn(ctx, j)
 			if err != nil {
-				_ = h.executeHooks(withEnv(ctx, jName, err), hooks.Failure)
+				logFailureHookErr(ctx, h.executeHooks(hooks.WithJobEnv(ctx, jName, err), jobHooks.Failure))
 				return err
 			}
 
-			return h.executeHooks(withEnv(ctx, jName, nil), hooks.Success)
+			return h.executeHooks(hooks.WithJobEnv(ctx, jName, nil), jobHooks.Success)
 		}
 	}
 }
 
-func withEnv(ctx context.Context, jobName string, err error) context.Context {
-	env := map[string]string{
-		"CRESTIC_JOB_NAME": jobName,
+func logFailureHookErr(ctx context.Context, err error) {
+	if err == nil {
+		return
 	}
 
-	if err != nil {
-		env["CRESTIC_ERROR"] = err.Error()
-	}
-
-	return shell.WithEnv(ctx, env)
+	log := logger.FromContext(ctx)
+	log.Warn().Err(err).Msg("Failure hook failed")
 }

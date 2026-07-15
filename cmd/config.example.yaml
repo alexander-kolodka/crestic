@@ -60,6 +60,21 @@ pipelines:
     # 2. With slug: https://hc-ping.com/{uuid}/{slug}
     healthcheck_url: https://hc-ping.com/your-uuid-here/documents
 
+    # ========================================
+    # PIPELINE LIFECYCLE HOOKS (optional)
+    # ========================================
+    # Run around the whole pipeline (before jobs / after success or failure).
+    # Environment variables:
+    # - CRESTIC_PIPELINE_NAME: pipeline name
+    # - CRESTIC_ERROR: error message (only in failure hooks)
+    hooks:
+      before:
+        - echo "Starting pipeline $CRESTIC_PIPELINE_NAME..."
+      success:
+        - echo "Pipeline $CRESTIC_PIPELINE_NAME completed"
+      failure:
+        - echo "Pipeline $CRESTIC_PIPELINE_NAME failed: $CRESTIC_ERROR" >&2
+
     jobs:
       # ========================================
       # BACKUP JOB

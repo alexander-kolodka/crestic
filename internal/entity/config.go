@@ -19,6 +19,7 @@ type Pipeline struct {
 	Name           string
 	Cron           string
 	HealthcheckURL string // Optional Healthchecks.io ping URL for this pipeline
+	Hooks          Hooks  // Optional lifecycle hooks for the pipeline
 	Jobs           Jobs
 }
 
