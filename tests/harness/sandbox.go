@@ -47,6 +47,11 @@ func New(t *testing.T) *Sandbox {
 	}
 }
 
+// Path joins elements under the sandbox root.
+func (s *Sandbox) Path(elem ...string) string {
+	return filepath.Join(append([]string{s.root}, elem...)...)
+}
+
 // Mkdir creates a directory under the sandbox root and returns its absolute path.
 func (s *Sandbox) Mkdir(dir string) string {
 	s.t.Helper()
