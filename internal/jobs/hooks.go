@@ -11,7 +11,7 @@ import (
 )
 
 type hookExecutor interface {
-	executeHooks(ctx context.Context, hooks []string) error
+	executeHooks(ctx context.Context, phase string, hooks []string) error
 }
 
 func newHookMw(h hookExecutor) mw.Middleware[entity.Job] {
@@ -20,19 +20,25 @@ func newHookMw(h hookExecutor) mw.Middleware[entity.Job] {
 			jobHooks := j.GetHooks()
 			jName := j.GetFullName()
 
-			err := h.executeHooks(hooks.WithJobEnv(ctx, jName, nil), jobHooks.Before)
+			err := h.executeHooks(hooks.WithJobEnv(ctx, jName, nil), hooks.PhaseBefore, jobHooks.Before)
 			if err != nil {
-				logFailureHookErr(ctx, h.executeHooks(hooks.WithJobEnv(ctx, jName, err), jobHooks.Failure))
+				logFailureHookErr(
+					ctx,
+					h.executeHooks(hooks.WithJobEnv(ctx, jName, err), hooks.PhaseFailure, jobHooks.Failure),
+				)
 				return fmt.Errorf("before hooks failed: %w", err)
 			}
 
 			err = fn(ctx, j)
 			if err != nil {
-				logFailureHookErr(ctx, h.executeHooks(hooks.WithJobEnv(ctx, jName, err), jobHooks.Failure))
+				logFailureHookErr(
+					ctx,
+					h.executeHooks(hooks.WithJobEnv(ctx, jName, err), hooks.PhaseFailure, jobHooks.Failure),
+				)
 				return err
 			}
 
-			return h.executeHooks(hooks.WithJobEnv(ctx, jName, nil), jobHooks.Success)
+			return h.executeHooks(hooks.WithJobEnv(ctx, jName, nil), hooks.PhaseSuccess, jobHooks.Success)
 		}
 	}
 }

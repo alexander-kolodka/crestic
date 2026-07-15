@@ -16,19 +16,25 @@ func newHookMw(runner *hooks.Runner) mw.Middleware[entity.Pipeline] {
 			pHooks := pipeline.Hooks
 			pName := pipeline.Name
 
-			err := runner.Execute(hooks.WithPipelineEnv(ctx, pName, nil), pHooks.Before)
+			err := runner.Execute(hooks.WithPipelineEnv(ctx, pName, nil), hooks.PhaseBefore, pHooks.Before)
 			if err != nil {
-				logFailureHookErr(ctx, runner.Execute(hooks.WithPipelineEnv(ctx, pName, err), pHooks.Failure))
+				logFailureHookErr(
+					ctx,
+					runner.Execute(hooks.WithPipelineEnv(ctx, pName, err), hooks.PhaseFailure, pHooks.Failure),
+				)
 				return fmt.Errorf("before hooks failed: %w", err)
 			}
 
 			err = fn(ctx, pipeline)
 			if err != nil {
-				logFailureHookErr(ctx, runner.Execute(hooks.WithPipelineEnv(ctx, pName, err), pHooks.Failure))
+				logFailureHookErr(
+					ctx,
+					runner.Execute(hooks.WithPipelineEnv(ctx, pName, err), hooks.PhaseFailure, pHooks.Failure),
+				)
 				return err
 			}
 
-			return runner.Execute(hooks.WithPipelineEnv(ctx, pName, nil), pHooks.Success)
+			return runner.Execute(hooks.WithPipelineEnv(ctx, pName, nil), hooks.PhaseSuccess, pHooks.Success)
 		}
 	}
 }

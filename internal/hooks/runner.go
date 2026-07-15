@@ -8,6 +8,12 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/shell"
 )
 
+const (
+	PhaseBefore  = "before"
+	PhaseSuccess = "success"
+	PhaseFailure = "failure"
+)
+
 // Runner executes shell hook commands sequentially.
 type Runner struct {
 	shell *shell.Executor
@@ -19,8 +25,16 @@ func New(shellExecutor *shell.Executor) *Runner {
 }
 
 // Execute runs hooks sequentially via sh -c and returns on the first failure.
-func (r *Runner) Execute(ctx context.Context, hooks []string) error {
+// Empty cmds are a no-op (no log).
+func (r *Runner) Execute(ctx context.Context, phase string, hooks []string) error {
+	if len(hooks) == 0 {
+		return nil
+	}
+
 	ctx = logger.WithSource(ctx, "hooks")
+	log := logger.FromContext(ctx)
+	log.Info().Str("phase", phase).Msg("Running hooks")
+
 	for _, hook := range hooks {
 		result := r.shell.Run(ctx, "sh", "-c", hook)
 		if result.Error != nil {

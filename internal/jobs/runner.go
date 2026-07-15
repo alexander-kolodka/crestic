@@ -149,6 +149,6 @@ func (r *Runner) initRepo(ctx context.Context, repo *entity.Repository) error {
 	return r.restic.Init(ctx, repo)
 }
 
-func (r *Runner) executeHooks(ctx context.Context, cmds []string) error {
-	return r.hooks.Execute(ctx, cmds)
+func (r *Runner) executeHooks(ctx context.Context, phase string, cmds []string) error {
+	return r.hooks.Execute(ctx, phase, cmds)
 }
