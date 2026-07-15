@@ -18,6 +18,18 @@ type repoEntry struct {
 	PasswordCMD string
 }
 
+// Hooks are lifecycle hook commands for a pipeline or job.
+type Hooks struct {
+	Before  []string
+	Success []string
+	Failure []string
+}
+
+// Empty reports whether no hook commands are configured.
+func (h Hooks) Empty() bool {
+	return len(h.Before) == 0 && len(h.Success) == 0 && len(h.Failure) == 0
+}
+
 type jobEntry struct {
 	Type     string
 	Name     string
@@ -25,12 +37,14 @@ type jobEntry struct {
 	FromRepo string
 	To       string
 	Options  map[string]any
+	Hooks    Hooks
 }
 
 type pipelineEntry struct {
-	Name string
-	Cron string
-	Jobs []jobEntry
+	Name  string
+	Cron  string
+	Hooks Hooks
+	Jobs  []jobEntry
 }
 
 type configData struct {

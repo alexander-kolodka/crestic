@@ -1,0 +1,36 @@
+---
+description: Interfaces belong at the consumer; no drive-by refactors
+alwaysApply: true
+---
+
+# Interfaces and change scope
+
+## Accept interfaces, define them at the use site
+
+In Go, the **consumer** owns the interface. Define it in the package that *uses* the dependency, next to that usage — not in the package that provides the concrete type.
+
+```go
+// BAD — interface co-located with implementers
+// internal/healthchecks/dummy.go
+type Service interface { Start(...); Success(...); Fail(...) }
+type Dummy struct{}
+type Client struct{}
+
+// GOOD — interface at the consumer
+// internal/cases/runpipelines/handler.go
+type Healthcheck interface {
+	Start(ctx context.Context, rid, body string) error
+	Success(ctx context.Context, rid, body string) error
+	Fail(ctx context.Context, rid, body string) error
+}
+```
+
+Infra packages (`internal/healthchecks`, `internal/shell`, …) export **concrete** types only. Callers define the narrow interface they need.
+
+If `ireturn` complains about returning a consumer interface from a factory, **allowlist that consumer interface** in `.golangci.yml` (or `//nolint:ireturn` with explanation). Do **not** move the interface into the implementation package to silence the linter.
+
+## Stay in scope
+
+- Do not refactor adjacent code, relocate interfaces, or “clean up” APIs unless the task asks for it.
+- Lint/test fixes must be the smallest change that unblocks CI — not an architecture drive-by.
+- When unsure whether a change belongs in the task, leave the existing pattern alone.

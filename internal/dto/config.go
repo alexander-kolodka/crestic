@@ -10,6 +10,7 @@ type Pipeline struct {
 	Name           string `yaml:"name"`
 	Cron           string `yaml:"cron"`
 	HealthcheckURL string `yaml:"healthcheck_url"`
+	Hooks          Hooks  `yaml:"hooks"`
 	Jobs           Jobs   `yaml:"jobs"`
 }
 

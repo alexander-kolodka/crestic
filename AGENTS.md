@@ -9,7 +9,7 @@ Go CLI wrapper around [restic](https://restic.net/). Users define repositories a
 ## Architecture
 
 ```
-cmd/ → internal/cases/{feature}/ → entity | dto | restic | shell | healthchecks
+cmd/ → internal/cases/{feature}/ → entity | dto | restic | shell | healthchecks | hooks
 ```
 
 - **cmd/** — cobra commands, flag parsing, wiring handlers
@@ -17,7 +17,7 @@ cmd/ → internal/cases/{feature}/ → entity | dto | restic | shell | healthche
 - **internal/cases/handler/** — middleware chain (lock, panic recovery)
 - **internal/entity/** — domain types (Job, Pipeline, Config, Repository)
 - **internal/dto/** — YAML config parsing and mapping to entity
-- **internal/restic/**, **shell/**, **healthchecks/** — infrastructure
+- **internal/restic/**, **shell/**, **healthchecks/**, **hooks/** — infrastructure
 
 Config structure: repositories + pipelines. Each pipeline contains jobs (backup, copy) with optional cron schedule and hooks.
 

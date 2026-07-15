@@ -3,16 +3,12 @@ package runpipelines
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
-
-	"github.com/google/uuid"
-	"github.com/samber/lo"
 
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"github.com/alexander-kolodka/crestic/internal/healthchecks"
+	"github.com/alexander-kolodka/crestic/internal/hooks"
 	"github.com/alexander-kolodka/crestic/internal/jobs"
 	"github.com/alexander-kolodka/crestic/internal/logger"
+	"github.com/alexander-kolodka/crestic/internal/mw"
 )
 
 type Command struct {
@@ -22,7 +18,8 @@ type Command struct {
 }
 
 type Handler struct {
-	jobs *jobs.Runner
+	jobs  *jobs.Runner
+	hooks *hooks.Runner
 }
 
 type Healthcheck interface {
@@ -31,9 +28,10 @@ type Healthcheck interface {
 	Fail(ctx context.Context, rid, body string) error
 }
 
-func NewHandler(jobRunner *jobs.Runner) *Handler {
+func NewHandler(jobRunner *jobs.Runner, hooksRunner *hooks.Runner) *Handler {
 	return &Handler{
-		jobs: jobRunner,
+		jobs:  jobRunner,
+		hooks: hooksRunner,
 	}
 }
 
@@ -58,47 +56,15 @@ func (h *Handler) runPipeline(ctx context.Context, cmd *Command, pipeline entity
 	log := logger.FromContext(ctx)
 	log.Info().Str("pipeline", pipeline.Name).Msg("Processing pipeline")
 
-	hc, err := newHealthcheckService(cmd, pipeline)
-	if err != nil {
-		return err
-	}
+	fn := mw.Chain(
+		h.runJobs,
+		newHealthcheckMw(cmd),
+		newHookMw(h.hooks),
+	)
 
-	rid := uuid.NewString()
-
-	logHealthcheckErr(ctx, hc.Start(ctx, rid, startBody(pipeline)))
-
-	err = h.jobs.Run(ctx, pipeline.Jobs)
-	if err != nil {
-		logHealthcheckErr(ctx, hc.Fail(ctx, rid, err.Error()))
-		return err
-	}
-
-	logHealthcheckErr(ctx, hc.Success(ctx, rid, ""))
-
-	return nil
+	return fn(ctx, pipeline)
 }
 
-func newHealthcheckService(cmd *Command, pipeline entity.Pipeline) (Healthcheck, error) {
-	if !cmd.Healthcheck || cmd.DryRun || strings.TrimSpace(pipeline.HealthcheckURL) == "" {
-		return &healthchecks.Dummy{}, nil
-	}
-
-	return healthchecks.NewClient(pipeline.HealthcheckURL)
-}
-
-func logHealthcheckErr(ctx context.Context, err error) {
-	if err == nil {
-		return
-	}
-
-	log := logger.FromContext(ctx)
-	log.Warn().Err(err).Msg("Healthcheck ping failed")
-}
-
-func startBody(pipeline entity.Pipeline) string {
-	jNames := lo.Map(pipeline.Jobs, func(j entity.Job, _ int) string {
-		return j.GetName()
-	})
-
-	return fmt.Sprintf("%s: \n\t%s", pipeline.Name, strings.Join(jNames, "\n\t"))
+func (h *Handler) runJobs(ctx context.Context, pipeline entity.Pipeline) error {
+	return h.jobs.Run(ctx, pipeline.Jobs)
 }
