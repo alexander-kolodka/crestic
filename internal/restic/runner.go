@@ -18,13 +18,5 @@ type resticRunner struct {
 func (r *resticRunner) Run(ctx context.Context, service string, args ...string) *shell.Result {
 	ctx = logger.WithSource(ctx, "restic")
 
-	if logger.IsJSONMode(ctx) && len(args) > 0 {
-		newArgs := make([]string, 0, len(args)+1)
-		newArgs = append(newArgs, args[0])
-		newArgs = append(newArgs, "--json")
-		newArgs = append(newArgs, args[1:]...)
-		args = newArgs
-	}
-
 	return r.runner.Run(ctx, service, args...)
 }
