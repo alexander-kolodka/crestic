@@ -25,8 +25,9 @@ Config structure: repositories + pipelines. Each pipeline contains jobs (backup,
 
 1. Run `golangci-lint run` — must pass (includes `noinlineerr`, strict revive, sloglint)
 2. Run unit tests: `go test $(go list ./... | grep -v '/tests$')`
-3. If CLI or config changed: update `docs/pages/` and `cmd/config.example.yaml`
-4. If new CLI command added: add integration test in `tests/`
+3. Run isolation tests: `go test  -parallel 8 ./tests/...`
+4. If CLI or config changed: update `docs/pages/` and `cmd/config.example.yaml`
+5. If new CLI command added: add integration test in `tests/`
 
 ## Reference files
 

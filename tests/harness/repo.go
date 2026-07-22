@@ -26,7 +26,7 @@ func (r *RepoDir) IsInitialized(ctx context.Context) bool {
 func (r *RepoDir) SnapshotCount(ctx context.Context) int {
 	r.sandbox.t.Helper()
 
-	output, err := r.sandbox.Run(ctx, "exec", "--repo", r.Name, "snapshots", "--json")
+	output, err := r.sandbox.Run(ctx, "exec", "--repo", r.Name, "snapshots", "--", "--json")
 	require.NoError(r.sandbox.t, err, output)
 
 	var snapshots []json.RawMessage
