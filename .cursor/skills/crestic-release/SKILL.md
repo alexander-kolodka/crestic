@@ -1,10 +1,10 @@
 ---
-name: release
+name: crestic-release
 description: >-
-  Create Crestic releases: compare commits since last tag on main, run pre-release
-  checks, generate changelog, bump v0.X.Y version, and publish GitHub Release.
-  Use when the user asks for a release, tag, minor/major bump, changelog, or
-  whether a release is needed.
+  Create Crestic project releases: compare commits since last tag on main, run
+  pre-release checks, generate changelog, bump v0.X.Y version, and publish
+  GitHub Release. Use when the user asks for a crestic release, Crestic tag,
+  minor/major bump, changelog, or whether a Crestic release is needed.
 disable-model-invocation: true
 ---
 
@@ -31,7 +31,7 @@ Task Progress:
 - [ ] Step 2: Check for new commits since last tag
 - [ ] Step 3: Pre-release checks (lint, unit, integration tests)
 - [ ] Step 4: Compute next version
-- [ ] Step 5: Generate changelog (English)
+- [ ] Step 5: Generate changelog and short title (English)
 - [ ] Step 6: Show summary and get user confirmation
 - [ ] Step 7: Create GitHub Release
 ```
@@ -102,7 +102,7 @@ Verify tag does not exist yet:
 git rev-parse "$NEW_TAG"   # must fail
 ```
 
-### Step 5 — Changelog (English)
+### Step 5 — Changelog and short title (English)
 
 Source: `git log "${LAST_TAG}..origin/main"`.
 
@@ -126,7 +126,10 @@ Rules:
 - ...
 ```
 
-Release title: `v0.X.Y` (tag must match version).
+**Short title (`SHORT_TITLE`)**: English, max 4–5 words, derived from the changelog. Prefer the dominant user-facing theme. Examples: `Output format changes`, `Pipeline hooks support`, `Fix Homebrew issues`, `Healthchecks and hooks`. If themes are equal weight, pick the most user-facing one; do not invent marketing fluff.
+
+- **Tag**: `v0.X.Y` (unchanged)
+- **GitHub Release title**: `v0.X.Y — ${SHORT_TITLE}` (em dash)
 
 Write notes to a temp file before `gh release create`.
 
@@ -135,6 +138,7 @@ Write notes to a temp file before `gh release create`.
 Show before publishing:
 - `LAST_TAG` → `NEW_TAG`
 - bump type (minor/major)
+- proposed release title (`${NEW_TAG} — ${SHORT_TITLE}`)
 - full changelog
 - commit SHA on `origin/main`
 
@@ -145,7 +149,7 @@ Show before publishing:
 ```bash
 gh release create "${NEW_TAG}" \
   --target origin/main \
-  --title "${NEW_TAG}" \
+  --title "${NEW_TAG} — ${SHORT_TITLE}" \
   --notes-file /tmp/release-notes.md
 ```
 
@@ -163,6 +167,6 @@ After creation, report the release URL and that the Homebrew tap will update aut
 
 ## Example
 
-User: "Make minor release"
+User: "Make crestic minor release"
 
-Agent: check commits → lint + unit + integration tests → `v0.4.0` → `v0.4.1` → changelog → confirm → `gh release create v0.4.1`
+Agent: check commits → lint + unit + integration tests → `v0.4.0` → `v0.4.1` → changelog + short title `Pipeline hooks support` → confirm → `gh release create` with title `v0.4.1 — Pipeline hooks support`
