@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 
 	"github.com/spf13/cobra"
 
@@ -27,21 +26,10 @@ Features:
   - Secure password management integration`,
 	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		ci, _ := cmd.Flags().GetBool("ci")
-		json, _ := cmd.Flags().GetBool("json")
-
-		if ci && json {
-			return errors.New("--ci and --json options cannot be used together")
-		}
-
 		logLevel, _ := cmd.Flags().GetString("log-level")
-		ctx := logger.New(logFormat(ci, json), toZerologLevel(logLevel)).
+		ctx := logger.New(logFormat(ci), toZerologLevel(logLevel)).
 			WithContext(cmd.Context())
 		ctx = logger.WithSource(ctx, "crestic")
-		if json {
-			ctx = logger.WithJSONMode(ctx)
-		}
-
-		cmd.Context()
 
 		printCommands, _ := cmd.Flags().GetBool("print-commands")
 		if printCommands {
@@ -65,7 +53,6 @@ func init() {
 			" home dir, ~/.crestic/, or ~/.config/crestic/)")
 	rootCmd.PersistentFlags().String("log-level", "info", "log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().Bool("ci", false, "output logs as plain text without colors (for CI/pipelines)")
-	rootCmd.PersistentFlags().Bool("json", false, "output logs in JSON format")
 	rootCmd.PersistentFlags().Bool("print-commands", false, "Print executed shell commands")
 
 	rootCmd.SilenceUsage = true
@@ -80,13 +67,9 @@ func init() {
 	)
 }
 
-func logFormat(ci, json bool) logger.Format {
+func logFormat(ci bool) logger.Format {
 	if ci {
 		return logger.FormatCI
-	}
-
-	if json {
-		return logger.FormatJSON
 	}
 
 	return logger.FormatColor

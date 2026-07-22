@@ -31,14 +31,6 @@ This can be useful when you want to run cron e.g. as all the output will be save
 crestic --ci backup --all
 ```
 
-## `--json`
-
-Output logs in JSON format. Useful for log aggregation systems.
-
-```bash
-crestic --json backup --all
-```
-
 ## `--print-commands`
 
 Print executed shell commands. Useful for debugging.

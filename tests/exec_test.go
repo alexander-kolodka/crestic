@@ -26,6 +26,6 @@ func TestExec_Snapshots(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, repo.SnapshotCount(ctx))
 
-	_, err = sb.Run(ctx, "exec", "--repo", repo.Name, "snapshots", "--json")
+	_, err = sb.Run(ctx, "exec", "--repo", repo.Name, "snapshots", "--", "--json")
 	require.NoError(t, err)
 }

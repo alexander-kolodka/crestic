@@ -44,19 +44,6 @@ func WithRepoFields(ctx context.Context, repo *entity.Repository) context.Contex
 		Logger().WithContext(ctx)
 }
 
-type jsonModeKey struct{}
-
-// WithJSONMode adds JSON mode flag to context.
-func WithJSONMode(ctx context.Context) context.Context {
-	return context.WithValue(ctx, jsonModeKey{}, true)
-}
-
-// IsJSONMode checks if JSON mode is enabled in context.
-func IsJSONMode(ctx context.Context) bool {
-	json, ok := ctx.Value(jsonModeKey{}).(bool)
-	return ok && json
-}
-
 type sourceKey struct{}
 
 // WithSource adds source field to the context logger.
