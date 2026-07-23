@@ -10,14 +10,15 @@ import (
 	"github.com/gofrs/flock"
 
 	"github.com/alexander-kolodka/crestic/internal/logger"
+	"github.com/alexander-kolodka/crestic/internal/pkg/mw"
 )
 
 // WithLock wraps a handler with file-based locking to prevent concurrent execution.
 // The lock file is created in ~/.crestic/ directory.
 // The lock is released on normal return, on panic, and when ctx is canceled (SIGINT/SIGTERM).
-func WithLock[CMD any](lockFile string) Middleware[CMD] {
-	return func(h Handler[CMD]) Handler[CMD] {
-		return NewHandler(func(ctx context.Context, cmd CMD) error {
+func WithLock[CMD any](lockFile string) mw.Middleware[CMD] {
+	return func(fn mw.Func[CMD]) mw.Func[CMD] {
+		return func(ctx context.Context, cmd CMD) error {
 			home, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("failed to get home directory: %w", err)
@@ -63,7 +64,7 @@ func WithLock[CMD any](lockFile string) Middleware[CMD] {
 				release()
 			}()
 
-			return h.Handle(ctx, cmd)
-		})
+			return fn(ctx, cmd)
+		}
 	}
 }

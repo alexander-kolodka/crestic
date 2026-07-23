@@ -14,7 +14,8 @@ cmd/ → internal/cases/{feature}/ → entity | dto | restic | shell | healthche
 
 - **cmd/** — cobra commands, flag parsing, wiring handlers
 - **internal/cases/** — use case handlers (`Handler` + `Command` per feature)
-- **internal/cases/handler/** — middleware chain (lock, panic recovery)
+- **internal/cases/handler/** — command wrappers (`Wrap`, lock, panic recovery) over `internal/pkg/mw`
+- **internal/pkg/mw/** — generic middleware chain (also used for pipeline/job hooks)
 - **internal/entity/** — domain types (Job, Pipeline, Config, Repository)
 - **internal/dto/** — YAML config parsing and mapping to entity
 - **internal/restic/**, **shell/**, **healthchecks/**, **hooks/** — infrastructure

@@ -19,7 +19,7 @@ func TestWithPanicRecoveryCatchesPanic(t *testing.T) {
 		panic("test panic")
 	})
 
-	wrapped := handler.WithPanicRecovery[testCommand]()(base)
+	wrapped := handler.Chain(base, handler.WithPanicRecovery[testCommand]())
 
 	err := wrapped.Handle(context.Background(), testCommand{})
 	var pe *panix.PanicError
@@ -34,7 +34,7 @@ func TestWithPanicRecoveryWithError(t *testing.T) {
 		return testErr
 	})
 
-	wrapped := handler.WithPanicRecovery[testCommand]()(base)
+	wrapped := handler.Chain(base, handler.WithPanicRecovery[testCommand]())
 	err := wrapped.Handle(context.Background(), testCommand{})
 	require.ErrorIs(t, err, testErr)
 	var pe *panix.PanicError
@@ -48,7 +48,7 @@ func TestWithPanicRecoveryWithoutPanic(t *testing.T) {
 		return nil
 	})
 
-	wrapped := handler.WithPanicRecovery[testCommand]()(base)
+	wrapped := handler.Chain(base, handler.WithPanicRecovery[testCommand]())
 
 	err := wrapped.Handle(context.Background(), testCommand{})
 	assert.NoError(t, err)
