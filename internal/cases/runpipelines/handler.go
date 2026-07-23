@@ -8,7 +8,7 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/hooks"
 	"github.com/alexander-kolodka/crestic/internal/jobs"
 	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/mw"
+	"github.com/alexander-kolodka/crestic/internal/pkg/mw"
 )
 
 type Command struct {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/alexander-kolodka/crestic/internal/mw"
+	"github.com/alexander-kolodka/crestic/internal/pkg/mw"
 	"github.com/alexander-kolodka/crestic/internal/pkg/testutils"
 )
 
@@ -36,7 +36,7 @@ func TestChain(t *testing.T) {
 		}
 	}
 
-	chained := mw.Chain(base, mw1, mw2)
+	chained := mw2.Chain(base, mw1, mw2)
 
 	require.NoError(t, chained(context.Background(), "x"))
 

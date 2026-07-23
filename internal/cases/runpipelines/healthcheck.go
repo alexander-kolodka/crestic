@@ -11,7 +11,7 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/healthchecks"
 	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/mw"
+	"github.com/alexander-kolodka/crestic/internal/pkg/mw"
 )
 
 func newHealthcheckMw(cmd *Command) mw.Middleware[entity.Pipeline] {
