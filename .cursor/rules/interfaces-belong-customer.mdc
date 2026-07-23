@@ -17,7 +17,7 @@ type Dummy struct{}
 type Client struct{}
 
 // GOOD — interface at the consumer
-// internal/cases/runpipelines/handler.go
+// internal/engine/pipelines/healthcheck.go
 type Healthcheck interface {
 	Start(ctx context.Context, rid, body string) error
 	Success(ctx context.Context, rid, body string) error

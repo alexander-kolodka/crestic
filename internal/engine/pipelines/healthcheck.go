@@ -1,4 +1,4 @@
-package runpipelines
+package pipelines
 
 import (
 	"context"
@@ -9,15 +9,22 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/alexander-kolodka/crestic/internal/engine/healthchecks"
+	"github.com/alexander-kolodka/crestic/internal/engine/jobs"
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/logger"
 	"github.com/alexander-kolodka/crestic/internal/pkg/mw"
 )
 
-func newHealthcheckMw(cmd *Command) mw.Middleware[entity.Pipeline] {
+type Healthcheck interface {
+	Start(ctx context.Context, rid, body string) error
+	Success(ctx context.Context, rid, body string) error
+	Fail(ctx context.Context, rid, body string) error
+}
+
+func newHealthcheckMw(healthcheck bool) mw.Middleware[entity.Pipeline] {
 	return func(fn mw.Func[entity.Pipeline]) mw.Func[entity.Pipeline] {
 		return func(ctx context.Context, pipeline entity.Pipeline) error {
-			hc, err := newHealthcheckService(cmd, pipeline)
+			hc, err := newHealthcheckService(ctx, healthcheck, pipeline)
 			if err != nil {
 				return err
 			}
@@ -38,8 +45,8 @@ func newHealthcheckMw(cmd *Command) mw.Middleware[entity.Pipeline] {
 }
 
 //nolint:ireturn // factory returns Dummy or Client behind the local Healthcheck interface
-func newHealthcheckService(cmd *Command, pipeline entity.Pipeline) (Healthcheck, error) {
-	if !cmd.Healthcheck || cmd.DryRun || strings.TrimSpace(pipeline.HealthcheckURL) == "" {
+func newHealthcheckService(ctx context.Context, healthcheck bool, pipeline entity.Pipeline) (Healthcheck, error) {
+	if !healthcheck || jobs.IsDryRun(ctx) || strings.TrimSpace(pipeline.HealthcheckURL) == "" {
 		return &healthchecks.Dummy{}, nil
 	}
 

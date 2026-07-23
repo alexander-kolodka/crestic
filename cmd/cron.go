@@ -11,6 +11,7 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/engine/cron"
 	"github.com/alexander-kolodka/crestic/internal/engine/hooks"
 	"github.com/alexander-kolodka/crestic/internal/engine/jobs"
+	"github.com/alexander-kolodka/crestic/internal/engine/pipelines"
 	"github.com/alexander-kolodka/crestic/internal/engine/restic"
 	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 )
@@ -78,9 +79,10 @@ cron expression matches.`,
 		executor := shell.NewExecutor()
 		hooksRunner := hooks.New(executor)
 		jobRunner := jobs.NewRunner(restic.NewService(executor), hooksRunner)
+		pipelinesRunner := pipelines.NewRunner(jobRunner, hooksRunner)
 
 		h := handler.Chain(
-			runpipelines.NewHandler(jobRunner, hooksRunner),
+			runpipelines.NewHandler(pipelinesRunner),
 			handler.WithPanicRecovery[*runpipelines.Command](),
 			handler.WithLock[*runpipelines.Command](lockFile),
 		)
