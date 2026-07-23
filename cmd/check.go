@@ -5,8 +5,8 @@ import (
 
 	"github.com/alexander-kolodka/crestic/internal/cases/check"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/restic"
-	"github.com/alexander-kolodka/crestic/internal/shell"
+	"github.com/alexander-kolodka/crestic/internal/engine/restic"
+	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 )
 
 var checkCmd = &cobra.Command{

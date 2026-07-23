@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	hooks2 "github.com/alexander-kolodka/crestic/internal/engine/hooks"
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"github.com/alexander-kolodka/crestic/internal/hooks"
 	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/mw"
+	"github.com/alexander-kolodka/crestic/internal/pkg/mw"
 )
 
 type hookExecutor interface {
@@ -20,11 +20,11 @@ func newHookMw(h hookExecutor) mw.Middleware[entity.Job] {
 			jobHooks := j.GetHooks()
 			jName := j.GetFullName()
 
-			err := h.executeHooks(hooks.WithJobEnv(ctx, jName, nil), hooks.PhaseBefore, jobHooks.Before)
+			err := h.executeHooks(hooks2.WithJobEnv(ctx, jName, nil), hooks2.PhaseBefore, jobHooks.Before)
 			if err != nil {
 				logFailureHookErr(
 					ctx,
-					h.executeHooks(hooks.WithJobEnv(ctx, jName, err), hooks.PhaseFailure, jobHooks.Failure),
+					h.executeHooks(hooks2.WithJobEnv(ctx, jName, err), hooks2.PhaseFailure, jobHooks.Failure),
 				)
 				return fmt.Errorf("before hooks failed: %w", err)
 			}
@@ -33,12 +33,12 @@ func newHookMw(h hookExecutor) mw.Middleware[entity.Job] {
 			if err != nil {
 				logFailureHookErr(
 					ctx,
-					h.executeHooks(hooks.WithJobEnv(ctx, jName, err), hooks.PhaseFailure, jobHooks.Failure),
+					h.executeHooks(hooks2.WithJobEnv(ctx, jName, err), hooks2.PhaseFailure, jobHooks.Failure),
 				)
 				return err
 			}
 
-			return h.executeHooks(hooks.WithJobEnv(ctx, jName, nil), hooks.PhaseSuccess, jobHooks.Success)
+			return h.executeHooks(hooks2.WithJobEnv(ctx, jName, nil), hooks2.PhaseSuccess, jobHooks.Success)
 		}
 	}
 }

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/shell"
 )
 
 const (

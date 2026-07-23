@@ -7,8 +7,8 @@ import (
 
 	"github.com/alexander-kolodka/crestic/internal/cases/exec"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/restic"
-	"github.com/alexander-kolodka/crestic/internal/shell"
+	"github.com/alexander-kolodka/crestic/internal/engine/restic"
+	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 )
 
 var execCmd = &cobra.Command{

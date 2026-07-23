@@ -53,12 +53,3 @@ func WithSource(ctx context.Context, source string) context.Context {
 		Str("source", source).
 		Logger().WithContext(ctx)
 }
-
-// GetSource extracts source field from context.
-func GetSource(ctx context.Context) string {
-	source, ok := ctx.Value(sourceKey{}).(string)
-	if ok {
-		return source
-	}
-	return ""
-}

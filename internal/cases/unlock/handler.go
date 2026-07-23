@@ -3,9 +3,9 @@ package unlock
 import (
 	"context"
 
+	"github.com/alexander-kolodka/crestic/internal/engine/restic"
 	"github.com/alexander-kolodka/crestic/internal/entity"
 	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/restic"
 )
 
 type Command struct {

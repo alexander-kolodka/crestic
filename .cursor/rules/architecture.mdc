@@ -13,16 +13,16 @@ Crestic is a Go CLI wrapper around restic. Config is YAML; pipelines contain job
 |-------|------|----------------|
 | CLI | `cmd/` | cobra commands, wiring, flags |
 | Use cases | `internal/cases/{feature}/` | `Handler` + `Command` |
-| Middleware | `internal/cases/handler/` | `Chain`, `WithLock`, `WithPanicRecovery` |
+| Middleware | `internal/cases/handler/` + `internal/pkg/mw/` | command: `Wrap`, `WithLock`, `WithPanicRecovery`; execution: `mw.Chain` |
 | Domain | `internal/entity/` | business entities (Job, Pipeline, Config) |
 | DTO | `internal/dto/` | YAML config to entity mapping |
-| Infra | `internal/restic/`, `internal/shell/`, `internal/healthchecks/`, `internal/hooks/` | external services |
+| Infra | `../../internal/engine/restic/`, `../../internal/engine/shell/`, `../../internal/engine/healthchecks/`, `../../internal/engine/hooks/` | external services |
 
 
 ## Patterns
 
 - New command: `cmd/{cmd}.go` -> handler in `internal/cases/` -> entity/dto as needed
-- Handler chain: `handler.Chain(base, WithPanicRecovery, WithLock)` — see `cmd/cron.go`
+- Handler chain: `handler.Wrap(base, WithPanicRecovery, WithLock)` — see `cmd/cron.go` (generic chain in `pkg/mw`)
 - Job interface (`internal/entity/job.go`): all job types implement `GetName()`, `GetPipeline()`, `GetFullName()`, `GetHooks()`
 - Batch errors: collect and return with `errors.Join()` — see `internal/cases/runpipelines/handler.go`
 

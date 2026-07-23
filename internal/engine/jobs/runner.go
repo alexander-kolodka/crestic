@@ -3,11 +3,11 @@ package jobs
 import (
 	"context"
 
+	"github.com/alexander-kolodka/crestic/internal/engine/hooks"
+	"github.com/alexander-kolodka/crestic/internal/engine/restic"
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"github.com/alexander-kolodka/crestic/internal/hooks"
 	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/mw"
-	"github.com/alexander-kolodka/crestic/internal/restic"
+	"github.com/alexander-kolodka/crestic/internal/pkg/mw"
 )
 
 // Runner executes jobs sequentially (fail-fast).
