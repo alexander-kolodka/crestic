@@ -16,7 +16,7 @@ Crestic is a Go CLI wrapper around restic. Config is YAML; pipelines contain job
 | Middleware | `internal/cases/handler/` | `Chain`, `WithLock`, `WithPanicRecovery` |
 | Domain | `internal/entity/` | business entities (Job, Pipeline, Config) |
 | DTO | `internal/dto/` | YAML config to entity mapping |
-| Infra | `internal/restic/`, `internal/shell/`, `internal/healthchecks/`, `internal/hooks/` | external services |
+| Infra | `internal/restic/`, `internal/shell/`, `internal/healthchecks/`, `../../internal/engine/hooks/` | external services |
 
 
 ## Patterns

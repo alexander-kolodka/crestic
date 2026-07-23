@@ -15,7 +15,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/alexander-kolodka/crestic/internal/cron"
+	"github.com/alexander-kolodka/crestic/internal/engine/cron"
 )
 
 const (
