@@ -3,8 +3,8 @@ package restic
 import (
 	"context"
 
+	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/shell"
 )
 
 type runner interface {

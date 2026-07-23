@@ -12,9 +12,9 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/engine/hooks"
 	"github.com/alexander-kolodka/crestic/internal/engine/jobs"
+	"github.com/alexander-kolodka/crestic/internal/engine/restic"
+	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 	"github.com/alexander-kolodka/crestic/internal/entity"
-	"github.com/alexander-kolodka/crestic/internal/restic"
-	"github.com/alexander-kolodka/crestic/internal/shell"
 )
 
 var backupCmd = &cobra.Command{

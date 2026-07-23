@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 	"github.com/alexander-kolodka/crestic/internal/logger"
-	"github.com/alexander-kolodka/crestic/internal/shell"
 	"github.com/alexander-kolodka/crestic/internal/version"
 )
 

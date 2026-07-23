@@ -11,8 +11,8 @@ import (
 	"github.com/alexander-kolodka/crestic/internal/engine/cron"
 	"github.com/alexander-kolodka/crestic/internal/engine/hooks"
 	"github.com/alexander-kolodka/crestic/internal/engine/jobs"
-	"github.com/alexander-kolodka/crestic/internal/restic"
-	"github.com/alexander-kolodka/crestic/internal/shell"
+	"github.com/alexander-kolodka/crestic/internal/engine/restic"
+	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 )
 
 var cronCmd = &cobra.Command{

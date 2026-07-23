@@ -3,7 +3,7 @@ package hooks
 import (
 	"context"
 
-	"github.com/alexander-kolodka/crestic/internal/shell"
+	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 )
 
 // WithJobEnv sets CRESTIC_JOB_NAME and optionally CRESTIC_ERROR for job hooks.
