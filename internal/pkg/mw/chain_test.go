@@ -36,7 +36,7 @@ func TestChain(t *testing.T) {
 		}
 	}
 
-	chained := mw2.Chain(base, mw1, mw2)
+	chained := mw.Chain(base, mw1, mw2)
 
 	require.NoError(t, chained(context.Background(), "x"))
 
