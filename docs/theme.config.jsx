@@ -1,5 +1,18 @@
 export default {
-  logo: <span>Crestic</span>,
+  logo: (
+    <>
+      <img src="/logo.png" width={24} height={24} alt="Crestic" />
+      <span style={{ marginLeft: '.4em', fontWeight: 600 }}>Crestic</span>
+    </>
+  ),
+  head: (
+    <>
+      <link rel="icon" type="image/png" href="/favicon.png" />
+      <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      <meta property="og:image" content="https://crestic.kolodka.fyi/og.png" />
+      <meta name="twitter:card" content="summary" />
+    </>
+  ),
   docsRepositoryBase: 'https://github.com/alexander-kolodka/crestic/tree/main/docs',
   project: {
     link: 'https://github.com/alexander-kolodka/crestic',

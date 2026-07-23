@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://crestic.kolodka.fyi">
+    <img src="docs/public/og.png" alt="Crestic" width="128" height="128">
+  </a>
+</p>
+
 # Crestic
 
 Crestic is a simple wrapper around the excellent backup tool [restic](https://restic.net/).
