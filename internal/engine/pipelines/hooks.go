@@ -1,4 +1,4 @@
-package runpipelines
+package pipelines
 
 import (
 	"context"

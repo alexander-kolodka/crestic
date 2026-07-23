@@ -26,7 +26,7 @@ func NewRunner(resticService *restic.Service, hooksRunner *hooks.Runner) *Runner
 
 // Run executes jobs sequentially and returns on the first error (fail-fast).
 func (r *Runner) Run(ctx context.Context, jobs []entity.Job) error {
-	if isDryRun(ctx) {
+	if IsDryRun(ctx) {
 		ctx = restic.WithDryRun(ctx)
 		ctx = logger.FromContext(ctx).With().Bool("dry-run", true).Logger().WithContext(ctx)
 	}

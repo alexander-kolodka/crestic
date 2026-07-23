@@ -38,7 +38,7 @@ Use these as patterns when generating code:
 |---------|------|
 | Error handling (split style) | `internal/dto/mapper.go` |
 | Handler chain wiring | `cmd/cron.go` |
-| Batch pipeline execution | `internal/cases/runpipelines/handler.go` |
+| Batch pipeline execution | `internal/engine/pipelines/runner.go` |
 | Integration test harness | `tests/harness/sandbox.go` |
 | Integration test example | `tests/backup_test.go` |
 

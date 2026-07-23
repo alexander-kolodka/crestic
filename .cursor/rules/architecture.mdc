@@ -24,7 +24,7 @@ Crestic is a Go CLI wrapper around restic. Config is YAML; pipelines contain job
 - New command: `cmd/{cmd}.go` -> handler in `internal/cases/` -> entity/dto as needed
 - Handler chain: `handler.Wrap(base, WithPanicRecovery, WithLock)` — see `cmd/cron.go` (generic chain in `pkg/mw`)
 - Job interface (`internal/entity/job.go`): all job types implement `GetName()`, `GetPipeline()`, `GetFullName()`, `GetHooks()`
-- Batch errors: collect and return with `errors.Join()` — see `internal/cases/runpipelines/handler.go`
+- Batch errors: collect and return with `errors.Join()` — see `internal/engine/pipelines/runner.go`
 
 ## Layer boundaries
 

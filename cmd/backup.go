@@ -9,9 +9,9 @@ import (
 
 	"github.com/alexander-kolodka/crestic/internal/cases/backup"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
 	"github.com/alexander-kolodka/crestic/internal/engine/hooks"
 	"github.com/alexander-kolodka/crestic/internal/engine/jobs"
+	"github.com/alexander-kolodka/crestic/internal/engine/pipelines"
 	"github.com/alexander-kolodka/crestic/internal/engine/restic"
 	"github.com/alexander-kolodka/crestic/internal/engine/shell"
 	"github.com/alexander-kolodka/crestic/internal/entity"
@@ -69,11 +69,17 @@ Examples:
 		executor := shell.NewExecutor()
 		hooksRunner := hooks.New(executor)
 		jobRunner := jobs.NewRunner(restic.NewService(executor), hooksRunner)
+		pipelinesRunner := pipelines.NewRunner(jobRunner, hooksRunner)
 
-		jobsHandler := handler.Chain(
-			backup.NewHandler(jobRunner),
+		h := handler.Chain(
+			backup.NewHandler(pipelinesRunner, jobRunner),
 			handler.WithPanicRecovery[*backup.Command](),
 		)
+
+		command := &backup.Command{
+			DryRun:      dryRun,
+			Healthcheck: healthcheck,
+		}
 
 		fullJobNames, _ := cmd.Flags().GetStringSlice("job")
 		extractedJobs, err := extractJobs(cfg, fullJobNames)
@@ -82,37 +88,24 @@ Examples:
 		}
 
 		if len(extractedJobs) > 0 {
-			return jobsHandler.Handle(cmd.Context(), &backup.Command{
-				Jobs:   extractedJobs,
-				DryRun: dryRun,
-			})
+			command.Jobs = extractedJobs
+			return h.Handle(cmd.Context(), command)
 		}
-
-		runPipelinesHandler := handler.Chain(
-			runpipelines.NewHandler(jobRunner, hooksRunner),
-			handler.WithPanicRecovery[*runpipelines.Command](),
-		)
 
 		all, _ := cmd.Flags().GetBool("all")
 		if all {
-			return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
-				Pipelines:   cfg.Pipelines,
-				DryRun:      dryRun,
-				Healthcheck: healthcheck,
-			})
+			command.Pipelines = cfg.Pipelines
+			return h.Handle(cmd.Context(), command)
 		}
 
 		pipelineNames, _ := cmd.Flags().GetStringSlice("pipeline")
-		pipelines, err := extractPipelines(cfg, pipelineNames)
+		extractedPipelines, err := extractPipelines(cfg, pipelineNames)
 		if err != nil {
 			return err
 		}
 
-		return runPipelinesHandler.Handle(cmd.Context(), &runpipelines.Command{
-			Pipelines:   pipelines,
-			DryRun:      dryRun,
-			Healthcheck: healthcheck,
-		})
+		command.Pipelines = extractedPipelines
+		return h.Handle(cmd.Context(), command)
 	},
 }
 
@@ -135,8 +128,8 @@ func extractJobs(cfg *entity.Config, fullJobNames []string) ([]entity.Job, error
 	})
 }
 
-func extractPipelines(cfg *entity.Config, pipelines []string) ([]entity.Pipeline, error) {
-	return lo.MapErr(pipelines, func(name string, _ int) (entity.Pipeline, error) {
+func extractPipelines(cfg *entity.Config, pipelineNames []string) ([]entity.Pipeline, error) {
+	return lo.MapErr(pipelineNames, func(name string, _ int) (entity.Pipeline, error) {
 		p, ok := cfg.FindPipeline(name)
 		if !ok {
 			return entity.Pipeline{}, fmt.Errorf("can't find pipeline %s", name)
