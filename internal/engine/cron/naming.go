@@ -5,35 +5,25 @@ import (
 	"encoding/hex"
 	"fmt"
 	"path/filepath"
+	"strings"
 )
 
-// CanonicalConfigPath returns the absolute config path with symlinks resolved.
-func CanonicalConfigPath(path string) (string, error) {
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		return "", fmt.Errorf("resolve config path: %w", err)
-	}
-
-	clean, err := filepath.EvalSymlinks(abs)
-	if err != nil {
-		return "", fmt.Errorf("resolve config symlinks: %w", err)
-	}
-
-	return clean, nil
-}
-
 // LockFileName returns the cron lock filename for a config.
-// cfgPath is the canonical config path; cfgBasename is the config filename without extension.
-func LockFileName(cfgPath, cfgBasename string) string {
+// cfgPath is the canonical config path.
+func LockFileName(cfgPath string) string {
 	hash := configHash(cfgPath)
-	return fmt.Sprintf("crestic-cron-%s-%s.lock", cfgBasename, hash)
+	return fmt.Sprintf("crestic-cron-%s-%s.lock", configBasename(cfgPath), hash)
 }
 
 // StateFileName returns the cron state filename for a config.
-// cfgPath is the canonical config path; cfgBasename is the config filename without extension.
-func StateFileName(cfgPath, cfgBasename string) string {
+// cfgPath is the canonical config path.
+func StateFileName(cfgPath string) string {
 	hash := configHash(cfgPath)
-	return fmt.Sprintf("crestic-cron-state-%s-%s.json", cfgBasename, hash)
+	return fmt.Sprintf("crestic-cron-state-%s-%s.json", configBasename(cfgPath), hash)
+}
+
+func configBasename(cfgPath string) string {
+	return strings.TrimSuffix(filepath.Base(cfgPath), filepath.Ext(cfgPath))
 }
 
 func configHash(cfgPath string) string {

@@ -1,19 +1,17 @@
 package cmd
 
 import (
-	"path/filepath"
-	"strings"
-
 	"github.com/spf13/cobra"
 
+	"github.com/alexander-kolodka/crestic/internal/cases/cron"
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/cases/runpipelines"
-	"github.com/alexander-kolodka/crestic/internal/engine/cron"
+	enginecron "github.com/alexander-kolodka/crestic/internal/engine/cron"
 	"github.com/alexander-kolodka/crestic/internal/engine/hooks"
 	"github.com/alexander-kolodka/crestic/internal/engine/jobs"
 	"github.com/alexander-kolodka/crestic/internal/engine/pipelines"
 	"github.com/alexander-kolodka/crestic/internal/engine/restic"
 	"github.com/alexander-kolodka/crestic/internal/engine/shell"
+	"github.com/alexander-kolodka/crestic/internal/pkg/paths"
 )
 
 var cronCmd = &cobra.Command{
@@ -55,23 +53,13 @@ cron expression matches.`,
 			return err
 		}
 
-		canonicalPath, err := cron.CanonicalConfigPath(resolvedPath)
+		canonicalPath, err := paths.Canonical(resolvedPath)
 		if err != nil {
 			return err
 		}
 
-		cfgName := strings.TrimSuffix(filepath.Base(canonicalPath), filepath.Ext(canonicalPath))
-		lockFile := cron.LockFileName(canonicalPath, cfgName)
-		stateFile := cron.StateFileName(canonicalPath, cfgName)
-
-		duePipelines, err := cron.FilterPipelinesByCron(cmd.Context(), cfg.Pipelines, stateFile)
-		if err != nil {
-			return err
-		}
-
-		if len(duePipelines) == 0 {
-			return nil
-		}
+		lockFile := enginecron.LockFileName(canonicalPath)
+		stateFile := enginecron.StateFileName(canonicalPath)
 
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		healthcheck, _ := cmd.Flags().GetBool("healthcheck")
@@ -82,13 +70,14 @@ cron expression matches.`,
 		pipelinesRunner := pipelines.NewRunner(jobRunner, hooksRunner)
 
 		h := handler.Chain(
-			runpipelines.NewHandler(pipelinesRunner),
-			handler.WithPanicRecovery[*runpipelines.Command](),
-			handler.WithLock[*runpipelines.Command](lockFile),
+			cron.NewHandler(pipelinesRunner),
+			handler.WithPanicRecovery[*cron.Command](),
+			handler.WithLock[*cron.Command](lockFile),
 		)
 
-		return h.Handle(cmd.Context(), &runpipelines.Command{
-			Pipelines:   duePipelines,
+		return h.Handle(cmd.Context(), &cron.Command{
+			Pipelines:   cfg.Pipelines,
+			StateFile:   stateFile,
 			DryRun:      dryRun,
 			Healthcheck: healthcheck,
 		})

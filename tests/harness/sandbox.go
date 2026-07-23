@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/alexander-kolodka/crestic/internal/engine/cron"
+	"github.com/alexander-kolodka/crestic/internal/pkg/paths"
 )
 
 const (
@@ -109,11 +109,10 @@ func (s *Sandbox) WriteCronState(pipeline string, lastRun time.Time) {
 	s.t.Helper()
 	s.ensureConfig()
 
-	canonicalPath, err := cron.CanonicalConfigPath(s.configPath)
+	canonicalPath, err := paths.Canonical(s.configPath)
 	require.NoError(s.t, err)
 
-	cfgBasename := strings.TrimSuffix(filepath.Base(canonicalPath), filepath.Ext(canonicalPath))
-	stateFileName := cron.StateFileName(canonicalPath, cfgBasename)
+	stateFileName := cron.StateFileName(canonicalPath)
 
 	state := cron.State{
 		Pipelines: map[string]cron.PipelineState{

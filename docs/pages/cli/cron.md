@@ -13,7 +13,7 @@ Run scheduled pipelines based on cron expressions.
 When launched, it:
 
 - Determines which pipelines should have run since their last execution time
-- Passes due pipelines to the runpipelines use case (backed by the pipelines engine runner)
+- Passes due pipelines to the cron use case (backed by the pipelines engine runner)
 - Executes all jobs in each due pipeline sequentially
 - Remembers last run time per pipeline (won't miss scheduled runs)
 - Optionally sends healthcheck pings when `--healthcheck` is set and the pipeline has `healthcheck_url`
