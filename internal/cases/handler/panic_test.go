@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/panix"
+	"github.com/alexander-kolodka/crestic/internal/pkg/panix"
 )
 
 func TestWithPanicRecoveryCatchesPanic(t *testing.T) {

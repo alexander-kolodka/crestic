@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/alexander-kolodka/crestic/internal/testutils"
+	"github.com/alexander-kolodka/crestic/internal/pkg/testutils"
 	"github.com/alexander-kolodka/crestic/tests/harness"
 )
 

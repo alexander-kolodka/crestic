@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/alexander-kolodka/crestic/internal/cases/handler"
-	"github.com/alexander-kolodka/crestic/internal/testutils"
+	"github.com/alexander-kolodka/crestic/internal/pkg/testutils"
 )
 
 func TestChain(t *testing.T) {

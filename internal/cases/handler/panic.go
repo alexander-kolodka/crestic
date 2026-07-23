@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 
-	"github.com/alexander-kolodka/crestic/internal/panix"
+	"github.com/alexander-kolodka/crestic/internal/pkg/panix"
 )
 
 // WithPanicRecovery wraps a handler with top-level panic recovery.
