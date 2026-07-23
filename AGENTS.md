@@ -9,16 +9,17 @@ Go CLI wrapper around [restic](https://restic.net/). Users define repositories a
 ## Architecture
 
 ```
-cmd/ → internal/cases/{feature}/ → entity | dto | restic | shell | healthchecks | hooks
+cmd/ → internal/cases/{feature}/ → entity | dto | engine/{restic,shell,healthchecks,hooks,cron,jobs,pipelines}
 ```
 
 - **cmd/** — cobra commands, flag parsing, wiring handlers
 - **internal/cases/** — use case handlers (`Handler` + `Command` per feature)
-- **internal/cases/handler/** — command wrappers (`Wrap`, lock, panic recovery) over `internal/pkg/mw`
+- **internal/cases/handler/** — command wrappers (`Chain`, lock, panic recovery) over `internal/pkg/mw`
 - **internal/pkg/mw/** — generic middleware chain (also used for pipeline/job hooks)
+- **internal/pkg/paths/** — path canonicalization helpers
 - **internal/entity/** — domain types (Job, Pipeline, Config, Repository)
 - **internal/dto/** — YAML config parsing and mapping to entity
-- **internal/restic/**, **shell/**, **healthchecks/**, **hooks/** — infrastructure
+- **internal/engine/** — infrastructure (`restic`, `shell`, `healthchecks`, `hooks`, `cron`, `jobs`, `pipelines`)
 
 Config structure: repositories + pipelines. Each pipeline contains jobs (backup, copy) with optional cron schedule and hooks.
 
@@ -47,7 +48,7 @@ Use these as patterns when generating code:
 See `.cursor/rules/go-style.mdc` and `.golangci.yml`. Key rules:
 
 - No inline error checks: assign `err` on one line, check on the next
-- Package names: single word, no underscores (`runpipelines`)
+- Package names: single word, no underscores (`cron`)
 - Static errors: `errors.New()`, not `fmt.Errorf()` without formatting
 - nolint directives must include an explanation
 

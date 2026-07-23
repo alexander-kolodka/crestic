@@ -49,7 +49,7 @@ func Execute(ctx context.Context) error {
 func init() {
 	rootCmd.SetVersionTemplate("crestic version {{.Version}}\n")
 	rootCmd.PersistentFlags().
-		StringP("config", "c", "", "config file (default is crestic.yml in current dir,"+
+		StringP("config", "c", "", "config file (default is crestic.yaml in current dir,"+
 			" home dir, ~/.crestic/, or ~/.config/crestic/)")
 	rootCmd.PersistentFlags().String("log-level", "info", "log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().Bool("ci", false, "output logs as plain text without colors (for CI/pipelines)")

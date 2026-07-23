@@ -40,4 +40,4 @@ repositories:
       prune: true  # Actually frees disk space
 ```
 
-**Note**: The `backup` command automatically runs forget after each backup, so you usually don't need to run this separately.
+**Note**: The `backup` command automatically runs forget after each backup and copy job (on the target repository), so you usually don't need to run this separately.

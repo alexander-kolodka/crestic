@@ -167,8 +167,11 @@ crestic backup --all
 The copy operation:
 
 1. **Runs `before` hooks** (if configured)
-2. **Copies snapshots** from source to target repository
-3. **Runs `success` or `failure` hooks** based on outcome
+2. **Initializes** source and target repositories if they do not exist yet
+3. **Copies snapshots** from source to target repository
+4. **Verifies integrity** — runs `restic check` on the target repository
+5. **Applies retention policy** — runs `restic forget` with the target's `forget_options`
+6. **Runs `success` or `failure` hooks** based on outcome
 
 Pipeline-level healthcheck pings (when enabled) wrap the whole pipeline, not individual copy jobs. See [Healthchecks](/healthchecks).
 

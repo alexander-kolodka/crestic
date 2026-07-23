@@ -20,8 +20,8 @@ crestic exec --all snapshots
 # List snapshots for specific repository
 crestic exec --repo local-repo snapshots
 
-# List snapshots with native restic options
-crestic exec --all snapshots --compact
+# List snapshots with native restic options (pass after --)
+crestic exec --all snapshots -- --compact
 
 # Show specific snapshot contents
 crestic exec --repo local-repo ls latest
