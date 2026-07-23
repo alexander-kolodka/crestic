@@ -40,7 +40,7 @@ return fmt.Errorf("duplicate pipeline name: %s", name)
 
 ## Package naming
 
-Use single-word package names without underscores: `runpipelines`, not `run_pipelines`.
+Use single-word package names without underscores: `cron`, not `run_pipelines`.
 
 ## Imports
 

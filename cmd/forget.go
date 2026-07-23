@@ -75,7 +75,7 @@ Examples:
 func init() {
 	rootCmd.AddCommand(forgetCmd)
 	forgetCmd.Flags().StringSliceP("repo", "r", nil, "Run forget for a specific repository")
-	forgetCmd.Flags().BoolP("all", "a", false, "Run forget for all jobs")
+	forgetCmd.Flags().BoolP("all", "a", false, "Run forget for all repositories")
 	forgetCmd.Flags().Bool("dry-run", false, "Show what would be deleted without actually deleting")
 	forgetCmd.Flags().Bool("prune", false, "Actually remove the data (frees up space)")
 

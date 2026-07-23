@@ -23,9 +23,9 @@ crestic --log-level debug backup --all
 
 ## `--ci`
 
-Run the CLI in CI Mode, which means there will be no interactivity, no colors and automatically sets verbose logging.
+Output logs as plain text without colors. Useful for CI pipelines and log collectors.
 
-This can be useful when you want to run cron e.g. as all the output will be saved.
+Log level is unchanged — use `--log-level` if you need more verbose output.
 
 ```bash
 crestic --ci backup --all

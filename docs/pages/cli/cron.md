@@ -20,6 +20,7 @@ When launched, it:
 
 ## Locking behavior
 - Only one instance of `crestic cron` can run per configuration file
+- The lock is acquired on every invocation, including when no pipeline is due
 - A lock file is created in `~/.crestic/` with the config basename and an MD5 hash of the config's canonical absolute path
   - Format: `crestic-cron-{basename}-{hash}.lock`
   - The hash is computed from the resolved absolute path after symlink resolution, not from the raw `--config` flag value

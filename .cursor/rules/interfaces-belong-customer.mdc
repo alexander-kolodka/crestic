@@ -11,7 +11,7 @@ In Go, the **consumer** owns the interface. Define it in the package that *uses*
 
 ```go
 // BAD — interface co-located with implementers
-// internal/healthchecks/dummy.go
+// internal/engine/healthchecks/service.go
 type Service interface { Start(...); Success(...); Fail(...) }
 type Dummy struct{}
 type Client struct{}
@@ -25,7 +25,7 @@ type Healthcheck interface {
 }
 ```
 
-Infra packages (`../../internal/engine/healthchecks`, `../../internal/engine/shell`, …) export **concrete** types only. Callers define the narrow interface they need.
+Infra packages (`internal/engine/healthchecks`, `internal/engine/shell`, …) export **concrete** types only. Callers define the narrow interface they need.
 
 If `ireturn` complains about returning a consumer interface from a factory, **allowlist that consumer interface** in `.golangci.yml` (or `//nolint:ireturn` with explanation). Do **not** move the interface into the implementation package to silence the linter.
 

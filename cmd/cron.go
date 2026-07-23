@@ -16,30 +16,30 @@ import (
 
 var cronCmd = &cobra.Command{
 	Use:   "cron",
-	Short: "Run scheduled jobs based on cron expressions",
-	Long: `Run scheduled backup jobs based on cron expressions defined in the configuration.
+	Short: "Run scheduled pipelines based on cron expressions",
+	Long: `Run scheduled pipelines based on cron expressions defined in the configuration.
 
 This command is designed to be called periodically by your system scheduler
-(e.g., cron, systemd timer, launchd). It intelligently tracks which jobs are due
+(e.g., cron, systemd timer, launchd). It intelligently tracks which pipelines are due
 to run and executes only those that should run based on their cron schedules.
 
 Key features:
-  - State tracking: Remembers last run time to prevent missed or duplicate jobs
+  - State tracking: Remembers last run time to prevent missed or duplicate pipelines
   - File locking: Only one instance can run at a time
   - Flexible scheduling: Can be run every 5, 15, or 30 minutes
-  - No missed jobs: Even if called infrequently, all scheduled jobs will run
+  - No missed pipelines: Even if called infrequently, all scheduled pipelines will run
 
 The command:
   1. Loads the last execution state from disk
-  2. Checks which jobs are due to run based on cron expressions
-  3. Executes all due jobs
+  2. Checks which pipelines are due to run based on cron expressions
+  3. Executes all due pipelines
   4. Saves the current time to state file
   5. Exits (next invocation will start from saved time)
 
 Setup example (add to crontab):
   */5 * * * * /usr/local/bin/crestic cron --config /path/to/crestic.yaml --healthcheck
 
-This runs the scheduler every 5 minutes, but jobs only execute when their
+This runs the scheduler every 5 minutes, but pipelines only execute when their
 cron expression matches.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		cfgPath, _ := cmd.Flags().GetString("config")
